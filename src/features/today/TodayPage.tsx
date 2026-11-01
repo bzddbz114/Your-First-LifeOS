@@ -1,11 +1,14 @@
+import { Fragment, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { occursOn, useCalendarEvents } from "../../data/calendar";
+import { CalendarGate, EventRow } from "../../components/Calendar";
 import { addDays, formatMinutes, formatMoney, shortDate, today } from "../../data/db";
 import { addTask, deleteTask, listTasks, setTaskDone, type Task } from "../../data/tasks";
 import { addHabit, listHabits, setHabitChecked } from "../../data/habits";
 import { listCategories, listTransactions, listTransactionsOn } from "../../data/finance";
 import { latestHealthLog, listHealthLogs } from "../../data/health";
 import { useInvalidating } from "../../data/useInvalidating";
-import { AddInput, Card, EmptyState } from "../../components/Card";
+import { AddInput, Card } from "../../components/Card";
 import type { PageId } from "../../components/Sidebar";
 import { JournalEditor } from "../notes/NotesPage";
 
@@ -126,26 +129,76 @@ function Habits() {
   );
 }
 
-function Upcoming() {
+function TodayEvents() {
+  const day = today();
+  const { data: events = [], isFetched } = useCalendarEvents(day, day);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const todays = events.filter((e) => occursOn(e, day));
+  const allDay = todays.filter((e) => e.allDay);
+  const timed = todays.filter((e) => !e.allDay);
+  // The "now" line goes before the first event that hasn't started yet.
+  const nowIndex = timed.findIndex((e) => e.startMs > now);
+
+  if (!isFetched) return null;
+  if (todays.length === 0) return <p className="text-[13px] text-muted">今天日历上没有事件</p>;
+  return (
+    <ul className="flex flex-col gap-2">
+      {allDay.map((e) => (
+        <li key={e.id}>
+          <EventRow event={e} day={day} />
+        </li>
+      ))}
+      {timed.map((e, i) => (
+        <Fragment key={e.id}>
+          {i === nowIndex && <NowLine />}
+          <li className={e.endMs < now ? "opacity-60" : ""}>
+            <EventRow event={e} day={day} />
+          </li>
+        </Fragment>
+      ))}
+      {nowIndex === -1 && timed.length > 0 && <NowLine />}
+    </ul>
+  );
+}
+
+function NowLine() {
+  return (
+    <li aria-label="现在" className="flex items-center gap-2.5">
+      <span className="w-12 text-xs font-semibold text-warn">现在</span>
+      <span className="h-0.5 flex-1 bg-[#c2410c]" />
+    </li>
+  );
+}
+
+function Schedule() {
   const day = today();
   const { data: all = [] } = useQuery({ queryKey: ["tasks"], queryFn: listTasks });
   const end = addDays(day, 7);
-  const tasks = all.filter((t) => !t.done_at && t.due_date && t.due_date > day && t.due_date <= end);
+  const upcoming = all.filter((t) => !t.done_at && t.due_date && t.due_date > day && t.due_date <= end);
   return (
-    <Card title="接下来 7 天" className="flex-[1_1_280px]">
-      {tasks.length === 0 ? (
-        <EmptyState>未来一周没有安排</EmptyState>
-      ) : (
-        <ul className="flex flex-col gap-2.5">
-          {tasks.map((t) => (
-            <li key={t.id} className="flex gap-3">
-              <span className="w-14 shrink-0 text-[13px] text-muted tabular-nums">
-                {t.due_date === addDays(day, 1) ? "明天" : shortDate(t.due_date!)}
-              </span>
-              <span className="flex-1 rounded-lg bg-ground px-3 py-2 text-[13px] text-ink-2">{t.title}</span>
-            </li>
-          ))}
-        </ul>
+    <Card title="日程" className="flex-[1_1_280px]">
+      <CalendarGate>
+        <TodayEvents />
+      </CalendarGate>
+      {upcoming.length > 0 && (
+        <>
+          <h3 className="mt-2 text-xs font-semibold text-muted">未来 7 天到期</h3>
+          <ul className="flex flex-col gap-1.5">
+            {upcoming.map((t) => (
+              <li key={t.id} className="flex gap-2.5 text-[13px]">
+                <span className="w-12 shrink-0 text-muted tabular-nums">
+                  {t.due_date === addDays(day, 1) ? "明天" : shortDate(t.due_date!)}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-ink-2">{t.title}</span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </Card>
   );
@@ -244,7 +297,7 @@ export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
 
       <div className="flex flex-wrap gap-5">
         <Tasks onNavigate={onNavigate} />
-        <Upcoming />
+        <Schedule />
       </div>
 
       <div className="flex flex-wrap gap-5">

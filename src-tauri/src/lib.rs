@@ -1,3 +1,5 @@
+mod calendar;
+
 use tauri_plugin_sql::{Migration, MigrationKind};
 
 fn migrations() -> Vec<Migration> {
@@ -26,6 +28,11 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![
+            calendar::calendar_access_status,
+            calendar::calendar_request_access,
+            calendar::calendar_events,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

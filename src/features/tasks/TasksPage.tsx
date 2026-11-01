@@ -4,7 +4,9 @@ import { addDays, shortDate, today } from "../../data/db";
 import { addTask, deleteTask, listTasks, setTaskDone, setTaskDue, type Task } from "../../data/tasks";
 import { addHabit, archiveHabit, listHabits, setHabitChecked } from "../../data/habits";
 import { useInvalidating } from "../../data/useInvalidating";
-import { AddInput, Card, PageHeader, fieldClass, primaryButtonClass } from "../../components/Card";
+import { occursOn, useCalendarAccess, useCalendarEvents } from "../../data/calendar";
+import { CalendarGate, EventRow } from "../../components/Calendar";
+import { AddInput, Card, PageHeader, Segmented, fieldClass, ghostButtonClass, primaryButtonClass } from "../../components/Card";
 
 const HEATMAP_WEEKS = 12;
 
@@ -192,14 +194,107 @@ function HabitPanel() {
   );
 }
 
+const WEEKDAY_LABELS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+
+function mondayOf(day: string) {
+  const offset = (new Date(`${day}T00:00:00`).getDay() + 6) % 7;
+  return addDays(day, -offset);
+}
+
+function WeekView() {
+  const day = today();
+  const [weekStart, setWeekStart] = useState(mondayOf(day));
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const { data: access } = useCalendarAccess();
+  const { data: events = [] } = useCalendarEvents(days[0], days[6]);
+  const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: listTasks });
+  const toggle = useInvalidating("tasks", (t: { id: number; done: boolean }) => setTaskDone(t.id, t.done));
+
+  return (
+    <section aria-label="周视图" className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <button aria-label="上一周" className={`${ghostButtonClass} size-10 px-0`} onClick={() => setWeekStart(addDays(weekStart, -7))}>
+          ‹
+        </button>
+        <span className="min-w-36 text-center text-sm font-semibold">
+          {shortDate(days[0])} – {shortDate(days[6])}
+        </span>
+        <button aria-label="下一周" className={`${ghostButtonClass} size-10 px-0`} onClick={() => setWeekStart(addDays(weekStart, 7))}>
+          ›
+        </button>
+        {weekStart !== mondayOf(day) && (
+          <button className={ghostButtonClass} onClick={() => setWeekStart(mondayOf(day))}>
+            本周
+          </button>
+        )}
+      </div>
+      {access !== "granted" && <CalendarGate>{null}</CalendarGate>}
+      <div className="overflow-x-auto">
+        <div className="grid min-w-[840px] grid-cols-7 gap-2">
+          {days.map((d, i) => {
+            const isToday = d === day;
+            const dayEvents = events.filter((e) => occursOn(e, d));
+            const dayTasks = tasks.filter((t) => t.due_date === d);
+            return (
+              <div
+                key={d}
+                className={`flex min-h-[420px] min-w-0 flex-col gap-1.5 rounded-xl border p-2 ${
+                  isToday ? "border-accent bg-accent-soft/40" : "border-line bg-surface"
+                }`}
+              >
+                <div className="flex items-baseline gap-1.5 px-1 pb-1">
+                  <span className="text-xs text-muted">{WEEKDAY_LABELS[i]}</span>
+                  <span className={`text-lg font-semibold tabular-nums ${isToday ? "text-accent" : ""}`}>
+                    {Number(d.slice(8))}
+                  </span>
+                </div>
+                {dayEvents.map((e) => (
+                  <EventRow key={e.id} event={e} day={d} compact />
+                ))}
+                {dayTasks.map((t) => (
+                  <label key={t.id} className="flex cursor-pointer items-start gap-1.5 rounded-lg px-1 py-1 hover:bg-ground">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 size-3.5 shrink-0 accent-accent"
+                      checked={!!t.done_at}
+                      onChange={(e) => toggle.mutate({ id: t.id, done: e.target.checked })}
+                    />
+                    <span className={`min-w-0 text-xs ${t.done_at ? "text-faint line-through" : "text-ink-2"}`}>{t.title}</span>
+                  </label>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <p className="text-xs text-muted">彩色条为系统日历事件(只读),复选框为 LifeOS 任务。</p>
+    </section>
+  );
+}
+
 export function TasksPage() {
+  const [view, setView] = useState<"list" | "week">("list");
   return (
     <div className="mx-auto flex max-w-[1040px] flex-col gap-5">
-      <PageHeader title="任务与习惯" />
-      <div className="flex flex-wrap items-start gap-5">
-        <TaskList />
-        <HabitPanel />
-      </div>
+      <PageHeader title="任务与习惯">
+        <Segmented
+          label="视图"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "list", label: "列表" },
+            { value: "week", label: "周视图" },
+          ]}
+        />
+      </PageHeader>
+      {view === "list" ? (
+        <div className="flex flex-wrap items-start gap-5">
+          <TaskList />
+          <HabitPanel />
+        </div>
+      ) : (
+        <WeekView />
+      )}
     </div>
   );
 }

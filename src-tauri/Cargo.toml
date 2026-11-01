@@ -32,3 +32,10 @@ lto = true
 opt-level = 3
 panic = "abort"
 strip = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+block2 = "0.6"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["NSColor", "NSColorSpace", "objc2-core-foundation"] }
+objc2-event-kit = { version = "0.3", features = ["EKEventStore", "EKEvent", "EKCalendar", "EKCalendarItem", "EKObject", "EKTypes", "objc2-app-kit", "block2"] }
+objc2-foundation = "0.3"
