@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* Design tokens from the LifeOS canvas design. */
+@theme {
+  --color-ground: #f6f6f3;
+  --color-sidebar: #edede9;
+  --color-surface: #ffffff;
+  --color-field: #fafaf8;
+  --color-line: #e4e4df;
+  --color-line-strong: #dcdcd6;
+  --color-divider: #f0f0ec;
+  --color-ink: #1c1c1a;
+  --color-ink-2: #3a3a37;
+  --color-muted: #5e5e59;
+  --color-faint: #6f6f69;
+  --color-cell: #e6e6e1;
+  --color-accent: #2f5bd3;
+  --color-accent-soft: #eef2fc;
+  --color-accent-ink: #1e3f99;
+  --color-warn: #b4410e;
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
