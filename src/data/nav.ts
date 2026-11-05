@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import type { PageId } from "../components/Sidebar";
 
-export type TasksView = "list" | "week" | "projects";
+export type TasksView = "list" | "week";
 
 interface NavState {
   page: PageId;

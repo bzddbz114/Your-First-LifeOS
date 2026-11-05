@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { springs } from "./motion";
 import { SettingsDialog } from "./SettingsDialog";
 
-export type PageId = "today" | "tasks" | "finance" | "health" | "notes";
+export type PageId = "today" | "tasks" | "projects" | "finance" | "health" | "notes";
 
 const icon = (children: ReactNode) => (
   <svg
@@ -44,6 +44,16 @@ export const NAV: { id: PageId; label: string; icon: ReactNode }[] = [
     ),
   },
   {
+    id: "projects",
+    label: "项目",
+    icon: icon(
+      <>
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <path d="M8 14h8" />
+      </>,
+    ),
+  },
+  {
     id: "finance",
     label: "财务",
     icon: icon(
@@ -72,7 +82,7 @@ export function Sidebar({ active, onNavigate }: { active: PageId; onNavigate: (i
   return (
     <nav
       aria-label="主导航"
-      className="flex w-[220px] shrink-0 flex-col gap-1 border-r border-line-strong bg-sidebar px-3 py-5"
+      className="sidebar flex h-full w-[220px] shrink-0 flex-col overflow-y-auto gap-1 border-r border-line-strong bg-sidebar px-3 py-5"
     >
       <div className="flex items-center gap-2.5 px-2.5 pb-4 pt-1">
         <div className="flex size-7 items-center justify-center rounded-lg bg-ink">

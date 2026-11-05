@@ -5,6 +5,7 @@ import { getSetting, setSetting } from "./settings";
 export type AccentId = "blue" | "green" | "purple" | "rose" | "teal" | "graphite";
 export type Appearance = "system" | "light" | "dark";
 export type MotionPref = "full" | "reduced";
+export type StyleId = "classic" | "glass" | "soft" | "mono";
 export type HomeModule = "schedule" | "projects" | "habits" | "spending" | "body" | "journal";
 
 export interface Prefs {
@@ -13,11 +14,30 @@ export interface Prefs {
   accent: AccentId;
   appearance: Appearance;
   motion: MotionPref;
+  /** Visual style of panels and chrome. */
+  style: StyleId;
+  /** Today-page cards magnify under the pointer. */
+  hoverZoom: boolean;
   /** Today-page cards the user switched off. */
   homeHidden: HomeModule[];
 }
 
-export const DEFAULT_PREFS: Prefs = { name: "", accent: "blue", appearance: "system", motion: "full", homeHidden: [] };
+export const DEFAULT_PREFS: Prefs = {
+  name: "",
+  accent: "blue",
+  appearance: "system",
+  motion: "full",
+  style: "classic",
+  hoverZoom: true,
+  homeHidden: [],
+};
+
+export const STYLES: { id: StyleId; label: string; hint: string }[] = [
+  { id: "classic", label: "经典", hint: "清爽的白色卡片与细边框" },
+  { id: "glass", label: "液态玻璃", hint: "半透明磨砂面板,流动的彩色背景" },
+  { id: "soft", label: "柔光", hint: "无边框,大圆角与柔和阴影" },
+  { id: "mono", label: "极简", hint: "纯白底,发丝线与小圆角" },
+];
 
 /** [accent, accent-ink] for light and dark appearances. */
 export const ACCENTS: Record<AccentId, { label: string; light: [string, string]; dark: [string, string] }> = {
@@ -109,8 +129,9 @@ export function useApplyPrefs(prefs: Prefs) {
     const root = document.documentElement;
     root.dataset.theme = dark ? "dark" : "light";
     root.dataset.motion = prefs.motion;
+    root.dataset.style = prefs.style;
     const [accent, ink] = (ACCENTS[prefs.accent] ?? ACCENTS.blue)[dark ? "dark" : "light"];
     root.style.setProperty("--color-accent", accent);
     root.style.setProperty("--color-accent-ink", ink);
-  }, [dark, prefs.accent, prefs.motion]);
+  }, [dark, prefs.accent, prefs.motion, prefs.style]);
 }

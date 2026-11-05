@@ -9,7 +9,6 @@ import { addHabit, archiveHabit, listHabits, setHabitChecked } from "../../data/
 import { TASK_KEYS, useInvalidating } from "../../data/useInvalidating";
 import { occursOn, useCalendarAccess, useCalendarEvents } from "../../data/calendar";
 import { CalendarGate, EventRow } from "../../components/Calendar";
-import { ProjectsView } from "./ProjectsView";
 import { AddInput, Card, PageHeader, Segmented, fieldClass, ghostButtonClass, primaryButtonClass } from "../../components/Card";
 
 const HEATMAP_WEEKS = 12;
@@ -90,7 +89,7 @@ function TaskList() {
     <motion.section variants={riseIn} aria-label="任务列表" className="flex min-w-0 flex-[3_1_460px] flex-col gap-4">
       <NewTaskForm />
       {groups.length === 0 && (
-        <div className="rounded-[14px] border border-line bg-surface p-8 text-center text-sm text-muted">还没有任务</div>
+        <div className="panel rounded-[14px] border border-line bg-surface p-8 text-center text-sm text-muted">还没有任务</div>
       )}
       {/* Shared layout: ticking a task makes it glide from its group into "已完成". */}
       <LayoutGroup>
@@ -100,7 +99,7 @@ function TaskList() {
             layout
             transition={springs.smooth}
             style={{ borderRadius: 14 }}
-            className="border border-line bg-surface px-5 py-4"
+            className="panel border border-line bg-surface px-5 py-4"
           >
             <motion.h2 layout="position" transition={springs.smooth} className={`mb-1.5 text-sm font-semibold ${g.tone}`}>
               {g.title} <span className="font-normal text-muted">{g.items.length}</span>
@@ -261,7 +260,7 @@ function WeekView() {
             return (
               <div
                 key={d}
-                className={`flex min-h-[420px] min-w-0 flex-col gap-1.5 rounded-xl border p-2 ${
+                className={`panel flex min-h-[420px] min-w-0 flex-col gap-1.5 rounded-xl border p-2 ${
                   isToday ? "border-accent bg-accent-soft/40" : "border-line bg-surface"
                 }`}
               >
@@ -308,7 +307,6 @@ export function TasksPage() {
           options={[
             { value: "list", label: "列表" },
             { value: "week", label: "周视图" },
-            { value: "projects", label: "项目" },
           ]}
         />
       </PageHeader>
@@ -325,7 +323,6 @@ export function TasksPage() {
             <WeekView />
           </motion.div>
         )}
-        {view === "projects" && <ProjectsView />}
       </motion.div>
     </div>
   );

@@ -17,7 +17,7 @@ import { suggestSteps, type SuggestedStep } from "../../data/ai";
 import { useNav } from "../../data/nav";
 import { useSetting } from "../../data/settings";
 import { TASK_KEYS, useInvalidating } from "../../data/useInvalidating";
-import { fieldClass, ghostButtonClass, primaryButtonClass } from "../../components/Card";
+import { ConfirmButton, fieldClass, ghostButtonClass, primaryButtonClass } from "../../components/Card";
 import { collapse, enterIf, riseIn, springs, useIsNew } from "../../components/motion";
 
 const DAY_MS = 86_400_000;
@@ -419,7 +419,7 @@ function ProjectCard({ project, open, onToggle }: { project: Project; open: bool
       layout="position"
       layoutId={`project-${project.id}`}
       transition={springs.smooth}
-      className="group/card flex flex-col gap-3 rounded-[14px] border border-line bg-surface px-5 py-4"
+      className="panel group/card flex flex-col gap-3 rounded-[14px] border border-line bg-surface px-5 py-4"
     >
       <div className="flex flex-wrap items-center gap-2">
         <button aria-expanded={open} onClick={onToggle} className="flex min-h-9 min-w-0 flex-1 items-center gap-2 text-left">
@@ -434,14 +434,10 @@ function ProjectCard({ project, open, onToggle }: { project: Project; open: bool
           <button className={ghostButtonClass} onClick={() => archive.mutate(undefined)}>
             归档
           </button>
-          <button
-            className={ghostButtonClass}
-            onClick={() => {
-              if (confirm(`删除项目「${project.title}」及其 ${project.total} 个步骤?`)) remove.mutate(undefined);
-            }}
-          >
-            删除
-          </button>
+          <ConfirmButton
+            confirmLabel={project.total > 0 ? `连同 ${project.total} 个步骤删除?` : "确认删除"}
+            onConfirm={() => remove.mutate(undefined)}
+          />
         </div>
       </div>
 
@@ -512,7 +508,7 @@ export function ProjectsView() {
     <section aria-label="项目" className="flex flex-col gap-4">
       <NewProjectForm />
       {projects.length === 0 && (
-        <motion.div variants={riseIn} className="rounded-[14px] border border-line bg-surface p-8 text-center text-sm text-muted">
+        <motion.div variants={riseIn} className="panel rounded-[14px] border border-line bg-surface p-8 text-center text-sm text-muted">
           还没有项目。用项目追踪需要几周或几个月才能完成的事情,并拆成一步步的任务。
         </motion.div>
       )}

@@ -122,3 +122,157 @@ textarea:focus {
   animation-duration: 0.01ms !important;
   transition-duration: 0.01ms !important;
 }
+
+/* ───────────────────────── Interface styles (Settings → 个性化 → 风格) ─────────────────────────
+ * Components carry hook classes: .panel (cards, sheets), .sidebar, .inset (segmented tracks),
+ * .panel-lift (Today cards that magnify on hover). Each style restyles those hooks and tokens.
+ */
+:root {
+  --panel-shadow: 0 0 #0000;
+  --lift-shadow: 0 18px 40px -14px rgba(20, 24, 40, 0.22), 0 4px 12px -4px rgba(20, 24, 40, 0.08);
+}
+
+.panel {
+  box-shadow: var(--panel-shadow);
+}
+
+/* Hover magnify: the card under the pointer rises above its neighbours, which dim slightly. */
+.panel-lift {
+  position: relative;
+  transition:
+    box-shadow 0.35s var(--ease-out-soft),
+    opacity 0.35s var(--ease-out-soft),
+    filter 0.35s var(--ease-out-soft);
+}
+.panel-lift:hover {
+  z-index: 5;
+  box-shadow: var(--panel-shadow), var(--lift-shadow);
+}
+main:has(.panel-lift:hover) .panel-lift:not(:hover) {
+  opacity: 0.82;
+  filter: saturate(0.85);
+}
+
+/* Liquid Glass: translucent, blurred and saturated panels with a specular rim and sheen. */
+:root[data-style="glass"] {
+  --color-ground: #e9ecf3;
+  --color-surface: rgba(255, 255, 255, 0.72);
+  --color-field: rgba(255, 255, 255, 0.5);
+  --color-sidebar: rgba(255, 255, 255, 0.42);
+  --color-line: rgba(255, 255, 255, 0.7);
+  --color-line-strong: rgba(30, 34, 50, 0.12);
+  --color-divider: rgba(30, 34, 50, 0.07);
+  --color-cell: rgba(30, 34, 50, 0.08);
+  --glass-bg: rgba(255, 255, 255, 0.5);
+  --glass-rim: rgba(255, 255, 255, 0.95);
+  --glass-blob-2: #f2a7c3;
+  --glass-blob-3: #8fd3e8;
+  --glass-blob-opacity: 0.55;
+  --panel-shadow: inset 0 1px 0 var(--glass-rim), inset 0 -1px 0 rgba(255, 255, 255, 0.25),
+    0 10px 30px -10px rgba(30, 34, 60, 0.16), 0 1px 3px rgba(30, 34, 60, 0.06);
+}
+:root[data-style="glass"][data-theme="dark"] {
+  --color-ground: #101114;
+  --color-surface: rgba(48, 50, 58, 0.62);
+  --color-field: rgba(255, 255, 255, 0.06);
+  --color-sidebar: rgba(36, 38, 44, 0.45);
+  --color-line: rgba(255, 255, 255, 0.12);
+  --color-line-strong: rgba(255, 255, 255, 0.14);
+  --color-divider: rgba(255, 255, 255, 0.07);
+  --color-cell: rgba(255, 255, 255, 0.09);
+  --glass-bg: rgba(40, 42, 50, 0.45);
+  --glass-rim: rgba(255, 255, 255, 0.16);
+  --glass-blob-2: #8b4a9c;
+  --glass-blob-3: #1f6f86;
+  --glass-blob-opacity: 0.5;
+  --panel-shadow: inset 0 1px 0 var(--glass-rim), 0 12px 32px -12px rgba(0, 0, 0, 0.6);
+}
+:root[data-style="glass"] .panel,
+:root[data-style="glass"] .sidebar {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  isolation: isolate;
+}
+:root[data-style="glass"] .panel {
+  position: relative;
+  border-color: var(--color-line);
+  border-radius: 20px;
+}
+/* Specular sheen across the top-left, under the content. */
+:root[data-style="glass"] .panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 38%),
+    radial-gradient(120% 80% at 100% 100%, rgba(255, 255, 255, 0.18), transparent 60%);
+  opacity: 0.7;
+}
+:root[data-style="glass"][data-theme="dark"] .panel::before {
+  opacity: 0.18;
+}
+:root[data-style="glass"] .panel-sheet {
+  background: var(--color-surface);
+}
+:root[data-style="glass"] .sidebar {
+  border-right-color: var(--color-line);
+}
+:root[data-style="glass"] .inset {
+  background: rgba(30, 34, 50, 0.06);
+  box-shadow: inset 0 1px 2px rgba(30, 34, 50, 0.08);
+}
+:root[data-style="glass"][data-theme="dark"] .inset {
+  background: rgba(0, 0, 0, 0.25);
+}
+:root[data-style="glass"] .panel-lift:hover {
+  --glass-bg: rgba(255, 255, 255, 0.62);
+}
+:root[data-style="glass"][data-theme="dark"] .panel-lift:hover {
+  --glass-bg: rgba(52, 54, 62, 0.55);
+}
+
+/* Soft: borderless cards floating on layered, warm shadows, with generous corners. */
+:root[data-style="soft"] {
+  --color-ground: #f2f0eb;
+  --color-sidebar: #f2f0eb;
+  --panel-shadow: 0 1px 2px rgba(60, 48, 30, 0.05), 0 8px 24px -6px rgba(60, 48, 30, 0.12);
+}
+:root[data-style="soft"][data-theme="dark"] {
+  --color-ground: #141413;
+  --color-sidebar: #141413;
+  --panel-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 10px 28px -8px rgba(0, 0, 0, 0.55);
+}
+:root[data-style="soft"] .panel {
+  border-color: transparent;
+  border-radius: 22px;
+}
+:root[data-style="soft"] .sidebar {
+  border-right-color: transparent;
+}
+
+/* Minimal: white page, hairlines, tight corners, no shadows. */
+:root[data-style="mono"] {
+  --color-ground: #ffffff;
+  --color-sidebar: #fafafa;
+  --color-line: #e8e8e8;
+  --lift-shadow: 0 0 0 1px var(--color-ink);
+}
+:root[data-style="mono"][data-theme="dark"] {
+  --color-ground: #0f0f0f;
+  --color-sidebar: #141414;
+  --color-surface: #0f0f0f;
+  --color-line: #2a2a2a;
+}
+:root[data-style="mono"] .panel {
+  border-radius: 6px;
+}
+:root[data-style="mono"] .inset {
+  border-radius: 6px;
+}
+
+.panel-sheet {
+  box-shadow: var(--panel-shadow), 0 28px 70px -16px rgba(0, 0, 0, 0.35);
+}

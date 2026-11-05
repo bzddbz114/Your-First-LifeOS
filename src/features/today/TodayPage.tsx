@@ -7,7 +7,7 @@ import { addTask, deleteTask, listTasks, setTaskDone, type Task } from "../../da
 import { addHabit, listHabits, setHabitChecked } from "../../data/habits";
 import { listCategories, listTransactions, listTransactionsOn } from "../../data/finance";
 import { latestHealthLog, listHealthLogs } from "../../data/health";
-import { ProjectsOverview } from "../tasks/ProjectsView";
+import { ProjectsOverview } from "../projects/ProjectsView";
 import type { TasksView } from "../../data/nav";
 import { usePrefs } from "../../data/prefs";
 import { AnimatePresence, motion } from "motion/react";
@@ -52,6 +52,7 @@ function Tasks({ onNavigate }: { onNavigate: Navigate }) {
 
   return (
     <Card
+      lift
       title="今日待办"
       className="flex-[2_1_420px]"
       aside={<CardLink to="tasks" view="list" onNavigate={onNavigate}>全部任务</CardLink>}
@@ -109,6 +110,7 @@ function Habits() {
 
   return (
     <Card
+      lift
       title="习惯"
       className="flex-[1_1_300px]"
       aside={habits.length > 0 && <span className="text-[13px] text-muted">今日 {done}/{habits.length}</span>}
@@ -208,7 +210,7 @@ function Schedule() {
   const end = addDays(day, 7);
   const upcoming = all.filter((t) => !t.done_at && t.due_date && t.due_date > day && t.due_date <= end);
   return (
-    <Card title="日程" className="flex-[1_1_280px]">
+    <Card lift title="日程" className="flex-[1_1_280px]">
       <CalendarGate>
         <TodayEvents />
       </CalendarGate>
@@ -244,7 +246,7 @@ function Spending({ onNavigate }: { onNavigate: Navigate }) {
   const pct = budget ? Math.round((spentMonth / budget) * 100) : null;
 
   return (
-    <Card title="今日支出" className="flex-[1_1_260px]" aside={<CardLink to="finance" onNavigate={onNavigate}>账本</CardLink>}>
+    <Card lift title="今日支出" className="flex-[1_1_260px]" aside={<CardLink to="finance" onNavigate={onNavigate}>账本</CardLink>}>
       <div className="text-[32px] font-bold tracking-tight tabular-nums">{formatMoney(spentToday)}</div>
       {pct !== null && (
         <div>
@@ -291,7 +293,7 @@ function Body({ onNavigate }: { onNavigate: Navigate }) {
   const workout = logs.filter((l) => l.kind === "workout").reduce((s, l) => s + l.value, 0);
 
   return (
-    <Card title="身体" className="flex-[1_1_260px]" aside={<CardLink to="health" onNavigate={onNavigate}>健康</CardLink>}>
+    <Card lift title="身体" className="flex-[1_1_260px]" aside={<CardLink to="health" onNavigate={onNavigate}>健康</CardLink>}>
       <div>
         <div className="text-xs text-muted">昨晚睡眠</div>
         <div className="text-[32px] font-bold tracking-tight">{sleep ? formatMinutes(sleep.value) : "—"}</div>
@@ -335,7 +337,7 @@ export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
       </div>
 
       {show("projects") && (
-        <Card title="项目" aside={<CardLink to="tasks" view="projects" onNavigate={onNavigate}>全部项目</CardLink>}>
+        <Card lift title="项目" aside={<CardLink to="projects" onNavigate={onNavigate}>全部项目</CardLink>}>
           <ProjectsOverview />
         </Card>
       )}
@@ -348,7 +350,7 @@ export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       )}
 
-      {show("journal") && <Card title="日记" aside={<CardLink to="notes" onNavigate={onNavigate}>打开完整日记</CardLink>}>
+      {show("journal") && <Card lift title="日记" aside={<CardLink to="notes" onNavigate={onNavigate}>打开完整日记</CardLink>}>
         <JournalEditor day={day} compact />
       </Card>}
     </div>

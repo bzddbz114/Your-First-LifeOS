@@ -1,22 +1,48 @@
-import { useId, type ReactNode } from "react";
-import { motion } from "motion/react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import { riseIn, springs } from "./motion";
+import { usePrefs } from "../data/prefs";
+
+/**
+ * Scale that grows any card by about the same number of pixels, so a full-width card
+ * swells as visibly (and as gently) as a narrow one.
+ */
+function useLiftScale(enabled: boolean) {
+  const ref = useRef<HTMLElement>(null);
+  const [scale, setScale] = useState(1.025);
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || !el) return;
+    const ro = new ResizeObserver(() => setScale(Math.min(1.035, 1 + 18 / Math.max(el.offsetWidth, 1))));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [enabled]);
+  return [ref, scale] as const;
+}
 
 export function Card({
   title,
   aside,
   className = "",
+  lift = false,
   children,
 }: {
   title: string;
   aside?: ReactNode;
   className?: string;
+  /** Magnify on hover (Today page), if the user hasn't turned it off. */
+  lift?: boolean;
   children: ReactNode;
 }) {
+  const { hoverZoom } = usePrefs();
+  const on = lift && hoverZoom;
+  const [ref, scale] = useLiftScale(on);
   return (
     <motion.section
+      ref={ref}
       variants={riseIn}
-      className={`flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-5 ${className}`}
+      whileHover={on ? { scale, y: -3, transition: springs.smooth } : undefined}
+      className={`panel flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-5 ${on ? "panel-lift" : ""} ${className}`}
     >
       <div className="flex items-center gap-2">
         <h2 className="flex-1 text-[15px] font-semibold">{title}</h2>
@@ -46,7 +72,7 @@ export function PageHeader({ title, children }: { title: string; children?: Reac
 
 export function Stat({ label, value, sub, tone = "text-ink" }: { label: string; value: string; sub?: string; tone?: string }) {
   return (
-    <motion.div variants={riseIn} className="min-w-0 flex-[1_1_200px] rounded-[14px] border border-line bg-surface px-5 py-[18px]">
+    <motion.div variants={riseIn} className="panel min-w-0 flex-[1_1_200px] rounded-[14px] border border-line bg-surface px-5 py-[18px]">
       <div className="text-xs text-muted">{label}</div>
       <div className={`mt-1 text-[26px] font-bold tracking-tight tabular-nums ${tone}`}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}
@@ -67,14 +93,14 @@ export function Segmented<T extends string>({
 }) {
   const pillId = useId();
   return (
-    <div role="group" aria-label={label} className="flex rounded-[10px] bg-sidebar p-[3px]">
+    <div role="group" aria-label={label} className="inset flex rounded-[10px] bg-sidebar p-[3px]">
       {options.map((o) => (
         <button
           key={o.value}
           type="button"
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
-          className={`relative min-h-[38px] flex-1 rounded-lg px-3.5 text-[13px] transition-colors ${
+          className={`relative min-h-[38px] flex-1 whitespace-nowrap rounded-lg px-3.5 text-[13px] transition-colors ${
             o.value === value ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"
           }`}
         >
@@ -163,5 +189,50 @@ export function BarChart({
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * Destructive button with an inline second step (the webview has no native confirm()):
+ * the first click arms it, a second click within 3 s runs `onConfirm`.
+ */
+export function ConfirmButton({
+  label = "删除",
+  confirmLabel = "确认删除",
+  onConfirm,
+  className = ghostButtonClass,
+}: {
+  label?: string;
+  confirmLabel?: string;
+  onConfirm: () => void;
+  className?: string;
+}) {
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (!armed) return;
+    const t = setTimeout(() => setArmed(false), 3000);
+    return () => clearTimeout(t);
+  }, [armed]);
+  return (
+    <motion.button
+      layout
+      transition={springs.snappy}
+      onClick={() => (armed ? (setArmed(false), onConfirm()) : setArmed(true))}
+      onBlur={() => setArmed(false)}
+      className={`${className} overflow-hidden ${armed ? "!border-warn !bg-warn !text-white" : ""}`}
+    >
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={armed ? "armed" : "idle"}
+          className="inline-block"
+          initial={{ y: 10, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -10, opacity: 0 }}
+          transition={springs.snappy}
+        >
+          {armed ? confirmLabel : label}
+        </motion.span>
+      </AnimatePresence>
+    </motion.button>
   );
 }
