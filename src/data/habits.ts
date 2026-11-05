@@ -3,6 +3,8 @@ import { addDays, getDb } from "./db";
 export interface Habit {
   id: number;
   name: string;
+  /** Daily reminder time "HH:MM", or null. */
+  remind_at: string | null;
   checked: boolean;
   streak: number;
   /** One flag per day for the requested window ending at `day`, oldest first. */
@@ -11,8 +13,8 @@ export interface Habit {
 
 export async function listHabits(day: string, windowDays = 7): Promise<Habit[]> {
   const db = await getDb();
-  const habits = await db.select<{ id: number; name: string }[]>(
-    "SELECT id, name FROM habits WHERE archived_at IS NULL ORDER BY id",
+  const habits = await db.select<{ id: number; name: string; remind_at: string | null }[]>(
+    "SELECT id, name, remind_at FROM habits WHERE archived_at IS NULL ORDER BY remind_at IS NULL, remind_at, id",
   );
   const logs = await db.select<{ habit_id: number; day: string }[]>(
     "SELECT habit_id, day FROM habit_logs",
@@ -43,6 +45,11 @@ function streakEndingAt(days: Set<string>, day: string): number {
 export async function addHabit(name: string) {
   const db = await getDb();
   await db.execute("INSERT INTO habits (name) VALUES ($1)", [name]);
+}
+
+export async function setHabitReminder(id: number, remindAt: string | null) {
+  const db = await getDb();
+  await db.execute("UPDATE habits SET remind_at = $1 WHERE id = $2", [remindAt || null, id]);
 }
 
 export async function archiveHabit(id: number) {

@@ -18,6 +18,8 @@
   --color-accent-soft: #eef2fc;
   --color-accent-ink: #1e3f99;
   --color-warn: #b4410e;
+  /* Positive amounts (income). */
+  --color-good: #0f766e;
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
   /* ui-serif is New York on macOS; Songti carries the Chinese. */
   --font-serif: ui-serif, "New York", "Songti SC", "STSong", Georgia, serif;
@@ -40,6 +42,12 @@
   --color-faint: #8d8d86;
   --color-cell: #34342f;
   --color-warn: #f0884f;
+  --color-good: #4fd1b5;
+}
+
+/* Native controls (date pickers, selects, scrollbars) follow the app's theme, not the OS's. */
+:root:not([data-theme="dark"]) {
+  color-scheme: light;
 }
 
 /* The soft tint follows whichever accent is active. */
@@ -325,4 +333,23 @@ main:has(.panel-lift:hover) .panel-lift:not(:hover) {
 }
 :root[data-home="hud"] .home-card .card-title {
   letter-spacing: 0.02em;
+}
+
+/* Typed text always uses the theme's ink, so it is light on dark surfaces and dark on light ones. */
+input,
+textarea,
+select {
+  color: var(--color-ink);
+  caret-color: var(--color-accent);
+}
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-faint);
+  opacity: 1;
+}
+/* WebKit autofill paints its own yellow background and dark text; keep the theme's instead. */
+input:-webkit-autofill,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-ink);
+  -webkit-box-shadow: 0 0 0 1000px var(--color-field) inset;
 }

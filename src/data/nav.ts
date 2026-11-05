@@ -10,6 +10,8 @@ interface NavState {
   setTasksView: (view: TasksView) => void;
   calendarView: "day" | "week";
   settingsOpen: boolean;
+  /** The evening "plan tomorrow" dialog. */
+  planOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
 }
 
@@ -20,5 +22,6 @@ export const useNav = create<NavState>((set) => ({
   setTasksView: (tasksView) => set({ tasksView }),
   calendarView: "week",
   settingsOpen: false,
+  planOpen: false,
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
 }));

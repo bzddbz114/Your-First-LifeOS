@@ -4,11 +4,13 @@ import { occursOn, useCalendarEvents } from "../../data/calendar";
 import { CalendarGate, EventRow } from "../../components/Calendar";
 import { addDays, formatMinutes, formatMoney, shortDate, today } from "../../data/db";
 import { addTask, deleteTask, listTasks, setTaskDone, type Task } from "../../data/tasks";
-import { addHabit, listHabits, setHabitChecked } from "../../data/habits";
+import { addHabit, setHabitChecked } from "../../data/habits";
 import { listCategories, listTransactions, listTransactionsOn } from "../../data/finance";
 import { latestHealthLog, listHealthLogs } from "../../data/health";
 import { ProjectsOverview } from "../projects/ProjectsView";
 import { HomeHero } from "./HomeHero";
+import { TodayNudges } from "./TodayNudges";
+import { useTodayHabits } from "../../data/reminders";
 import { useNav, type TasksView } from "../../data/nav";
 import { usePrefs } from "../../data/prefs";
 import { AnimatePresence, motion } from "motion/react";
@@ -65,7 +67,15 @@ function Tasks({ onNavigate }: { onNavigate: Navigate }) {
       onOpen={() => onNavigate("tasks", "list")}
       title="今日待办"
       className="flex-[2_1_420px]"
-      aside={<CardLink to="tasks" view="list" onNavigate={onNavigate}>全部任务</CardLink>}
+      aside={
+        <>
+          <button className="text-[13px] text-accent hover:text-accent-ink" onClick={() => useNav.setState({ planOpen: true })}>
+            规划明天
+          </button>
+          <span className="text-line-strong">·</span>
+          <CardLink to="tasks" view="list" onNavigate={onNavigate}>全部任务</CardLink>
+        </>
+      }
     >
       <ul>
         <AnimatePresence initial={false}>
@@ -112,7 +122,7 @@ function Tasks({ onNavigate }: { onNavigate: Navigate }) {
 function Habits() {
   const day = today();
   const navigate = useNav((s) => s.navigate);
-  const { data: habits = [] } = useQuery({ queryKey: ["habits"], queryFn: () => listHabits(day) });
+  const { data: habits = [] } = useTodayHabits();
   const add = useInvalidating("habits", addHabit);
   const toggle = useInvalidating("habits", (h: { id: number; checked: boolean }) =>
     setHabitChecked(h.id, day, h.checked),
@@ -154,7 +164,9 @@ function Habits() {
             </motion.button>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm">{h.name}</div>
-              <div className="text-xs text-muted">连续 {h.streak} 天</div>
+              <div className="text-xs text-muted">
+                连续 {h.streak} 天{h.remind_at && <span className="tabular-nums"> · ⏰ {h.remind_at}</span>}
+              </div>
             </div>
             <div aria-hidden="true" className="flex gap-[3px]">
               {h.history.map((on, i) => (
@@ -336,6 +348,7 @@ export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
   return (
     <div className="mx-auto flex max-w-[1040px] flex-col gap-5">
       <HomeHero greeting={`${greeting()}${prefs.name ? `,${prefs.name}` : ""}`} remaining={remaining} />
+      <TodayNudges />
 
       <div className="flex flex-wrap gap-5">
         <Tasks onNavigate={onNavigate} />

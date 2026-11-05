@@ -9,6 +9,8 @@ import { useSession } from "./data/session";
 import { SignInScreen } from "./features/accounts/SignInScreen";
 import { useNav } from "./data/nav";
 import { useApplyPrefs, usePrefs } from "./data/prefs";
+import { useReminderSync } from "./data/reminders";
+import { PlanDialog } from "./features/plan/PlanDialog";
 import { TodayPage } from "./features/today/TodayPage";
 import { TasksPage } from "./features/tasks/TasksPage";
 import { ProjectsPage } from "./features/projects/ProjectsPage";
@@ -57,11 +59,13 @@ function Shell() {
   const prefs = usePrefs();
   useApplyPrefs(prefs);
   const mainRef = useRef<HTMLElement>(null);
+  useReminderSync();
   return (
     <>
       {/* Honors the system "Reduce motion" setting, or the in-app one: springs become instant. */}
       <MotionConfig reducedMotion={prefs.motion === "reduced" ? "always" : "user"}>
         {prefs.style === "glass" && <AmbientBackground />}
+        <PlanDialog />
         <div className="flex h-screen overflow-hidden">
           <Sidebar active={page} onNavigate={(p) => navigate(p)} />
           <main ref={mainRef} className="min-w-0 flex-1 overflow-y-auto overscroll-contain px-10 pb-12 pt-9">

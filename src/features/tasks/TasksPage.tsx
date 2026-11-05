@@ -5,7 +5,7 @@ import { enterIf, riseIn, springs, stagger, useIsNew } from "../../components/mo
 import { useNav } from "../../data/nav";
 import { addDays, shortDate, today } from "../../data/db";
 import { addTask, deleteTask, listTasks, setTaskDone, setTaskDue, type Task } from "../../data/tasks";
-import { addHabit, archiveHabit, listHabits, setHabitChecked } from "../../data/habits";
+import { addHabit, archiveHabit, listHabits, setHabitChecked, setHabitReminder } from "../../data/habits";
 import { TASK_KEYS, useInvalidating } from "../../data/useInvalidating";
 import { occursOn, useCalendarAccess, useCalendarEvents } from "../../data/calendar";
 import { CalendarGate, EventRow } from "../../components/Calendar";
@@ -161,6 +161,7 @@ function HabitPanel() {
   });
   const add = useInvalidating("habits", addHabit);
   const archive = useInvalidating("habits", archiveHabit);
+  const setTime = useInvalidating("habits", (h: { id: number; at: string | null }) => setHabitReminder(h.id, h.at));
   const toggle = useInvalidating("habits", (h: { id: number; checked: boolean }) =>
     setHabitChecked(h.id, day, h.checked),
   );
@@ -185,6 +186,21 @@ function HabitPanel() {
                 {h.checked ? "今日已打卡" : "打卡"}
               </button>
               <span className="min-w-0 flex-1 truncate text-sm font-semibold">{h.name}</span>
+              <label
+                title={h.remind_at ? "每天这个时间提醒打卡,清空即关闭" : "设置每日提醒时间"}
+                className={`flex items-center gap-1 rounded-md border px-1.5 text-xs ${
+                  h.remind_at ? "border-accent/40 text-accent" : "border-transparent text-muted opacity-0 group-hover:border-line-strong group-hover:opacity-100 focus-within:opacity-100"
+                }`}
+              >
+                <span aria-hidden="true">⏰</span>
+                <input
+                  type="time"
+                  aria-label={`「${h.name}」的提醒时间`}
+                  value={h.remind_at ?? ""}
+                  onChange={(e) => setTime.mutate({ id: h.id, at: e.target.value || null })}
+                  className="min-h-8 bg-transparent tabular-nums outline-none"
+                />
+              </label>
               <button
                 className="text-xs text-muted opacity-0 group-hover:opacity-100 focus:opacity-100"
                 onClick={() => archive.mutate(h.id)}
@@ -300,6 +316,9 @@ export function TasksPage() {
   return (
     <div className="mx-auto flex max-w-[1040px] flex-col gap-5">
       <PageHeader title="任务与习惯">
+        <button className={ghostButtonClass} onClick={() => useNav.setState({ planOpen: true })}>
+          🌙 规划明天
+        </button>
         <Segmented
           label="视图"
           value={view}

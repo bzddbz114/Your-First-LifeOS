@@ -213,6 +213,29 @@ function PersonalForm({ onClose }: { onClose: () => void }) {
           ]}
         />
       </Field>
+      <Field label="睡前规划提醒">
+        <div className="flex items-center gap-3">
+          <Segmented<"on" | "off">
+            label="睡前规划提醒"
+            value={prefs.planReminder ? "on" : "off"}
+            onChange={(v) => update.mutate({ planReminder: v === "on" })}
+            options={[
+              { value: "on", label: "开启" },
+              { value: "off", label: "关闭" },
+            ]}
+          />
+          {prefs.planReminder && (
+            <input
+              type="time"
+              aria-label="提醒时间"
+              value={prefs.planReminderAt}
+              onChange={(e) => e.target.value && update.mutate({ planReminderAt: e.target.value })}
+              className={`${fieldClass} w-auto tabular-nums`}
+            />
+          )}
+        </div>
+        <p className="text-[11px] text-muted">到点会发系统通知,主页也会出现规划入口。关掉窗口后应用仍在后台,提醒照常;⌘Q 退出后就不会提醒了。</p>
+      </Field>
       <Field label="今天页悬停放大">
         <Segmented<"on" | "off">
           label="今天页悬停放大"

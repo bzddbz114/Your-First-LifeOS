@@ -215,7 +215,7 @@ export function FinancePage() {
 
       <div className="flex flex-wrap gap-4">
         <Stat label="本月支出" value={formatMoney(expense)} sub={budget ? `预算 ${formatMoney(budget)}` : "未设预算"} />
-        <Stat label="本月收入" value={formatMoney(income)} tone="text-[#0f766e]" />
+        <Stat label="本月收入" value={formatMoney(income)} tone="text-good" />
         <Stat
           label="结余"
           value={`${income - expense < 0 ? "−" : ""}${formatMoney(income - expense)}`}
@@ -274,7 +274,7 @@ export function FinancePage() {
                       <td className="py-2.5">
                         <span className="rounded-md bg-ground px-2 py-0.5 text-ink-2">{t.category ?? "未分类"}</span>
                       </td>
-                      <td className={`py-2.5 text-right font-semibold ${t.amount_cents > 0 ? "text-[#0f766e]" : ""}`}>
+                      <td className={`py-2.5 text-right font-semibold ${t.amount_cents > 0 ? "text-good" : ""}`}>
                         {t.amount_cents > 0 ? "+" : "−"}
                         {formatMoney(t.amount_cents)}
                       </td>

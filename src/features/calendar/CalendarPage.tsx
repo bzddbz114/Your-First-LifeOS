@@ -10,6 +10,7 @@ import { CalendarGate } from "../../components/Calendar";
 import { PageHeader, Segmented, ghostButtonClass, primaryButtonClass } from "../../components/Card";
 import { riseIn, springs } from "../../components/motion";
 import { EventEditor, type EditorTarget } from "./EventEditor";
+import { readableOn } from "../../components/color";
 
 const HOUR_PX = 52;
 const SNAP_MIN = 30;
@@ -234,8 +235,8 @@ export function CalendarPage() {
                     <button
                       key={e.id}
                       onClick={() => setEditor({ event: e })}
-                      className="truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium text-white"
-                      style={{ background: e.color ?? "var(--color-accent)" }}
+                      className="truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium"
+                      style={{ background: e.color ?? "var(--color-accent)", color: e.color ? readableOn(e.color) : "#fff" }}
                     >
                       {e.title}
                     </button>

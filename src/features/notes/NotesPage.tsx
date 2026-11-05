@@ -89,7 +89,7 @@ function JournalFields({
         className={
           compact
             ? "w-full resize-y rounded-[10px] border border-line-strong bg-field p-3 text-sm outline-none focus:border-accent"
-            : "w-full resize-none border-0 bg-transparent text-base leading-[1.8] text-[#2a2a27] outline-none"
+            : "w-full resize-none border-0 bg-transparent text-base leading-[1.8] text-ink outline-none"
         }
       />
       <div role="group" aria-label="心情" className="flex flex-wrap gap-2">
@@ -157,7 +157,7 @@ function NoteEditor({ id, initialTitle, initialBody }: { id: number; initialTitl
         onChange={(e) => setBody(e.target.value)}
         rows={20}
         placeholder="开始写……"
-        className="w-full resize-none border-0 bg-transparent text-base leading-[1.8] text-[#2a2a27] outline-none"
+        className="w-full resize-none border-0 bg-transparent text-base leading-[1.8] text-ink outline-none"
       />
       <span className="text-xs text-muted" aria-live="polite">
         {save.isPending ? "保存中…" : save.isSuccess ? "已自动保存" : ""}

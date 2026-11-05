@@ -20,6 +20,10 @@ export interface Prefs {
   style: StyleId;
   /** Look of the Today page: warm editorial type, or an industrial HUD. */
   homeTheme: HomeTheme;
+  /** Evening nudge to plan tomorrow. */
+  planReminder: boolean;
+  /** "HH:MM" for that nudge. */
+  planReminderAt: string;
   /** Today-page cards magnify under the pointer. */
   hoverZoom: boolean;
   /** Today-page cards the user switched off. */
@@ -33,6 +37,8 @@ export const DEFAULT_PREFS: Prefs = {
   motion: "full",
   style: "classic",
   homeTheme: "editorial",
+  planReminder: true,
+  planReminderAt: "22:00",
   hoverZoom: true,
   homeHidden: [],
 };
