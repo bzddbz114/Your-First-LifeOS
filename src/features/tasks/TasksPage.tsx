@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { LayoutGroup, motion } from "motion/react";
+import { enterIf, riseIn, springs, stagger, useIsNew } from "../../components/motion";
+import { useNav } from "../../data/nav";
 import { addDays, shortDate, today } from "../../data/db";
 import { addTask, deleteTask, listTasks, setTaskDone, setTaskDue, type Task } from "../../data/tasks";
 import { addHabit, archiveHabit, listHabits, setHabitChecked } from "../../data/habits";
-import { useInvalidating } from "../../data/useInvalidating";
+import { TASK_KEYS, useInvalidating } from "../../data/useInvalidating";
 import { occursOn, useCalendarAccess, useCalendarEvents } from "../../data/calendar";
 import { CalendarGate, EventRow } from "../../components/Calendar";
+import { ProjectsView } from "./ProjectsView";
 import { AddInput, Card, PageHeader, Segmented, fieldClass, ghostButtonClass, primaryButtonClass } from "../../components/Card";
 
 const HEATMAP_WEEKS = 12;
@@ -42,7 +46,7 @@ function NewTaskForm() {
   const day = today();
   const [title, setTitle] = useState("");
   const [due, setDue] = useState(day);
-  const add = useInvalidating("tasks", () => addTask(title.trim(), due || null));
+  const add = useInvalidating(TASK_KEYS, () => addTask(title.trim(), due || null));
   return (
     <form
       className="flex flex-wrap gap-2"
@@ -76,25 +80,42 @@ function NewTaskForm() {
 function TaskList() {
   const day = today();
   const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: listTasks });
-  const toggle = useInvalidating("tasks", (t: { id: number; done: boolean }) => setTaskDone(t.id, t.done));
-  const setDue = useInvalidating("tasks", (t: { id: number; due: string | null }) => setTaskDue(t.id, t.due));
-  const remove = useInvalidating("tasks", deleteTask);
+  const toggle = useInvalidating(TASK_KEYS, (t: { id: number; done: boolean }) => setTaskDone(t.id, t.done));
+  const setDue = useInvalidating(TASK_KEYS, (t: { id: number; due: string | null }) => setTaskDue(t.id, t.due));
+  const remove = useInvalidating(TASK_KEYS, deleteTask);
   const groups = groupTasks(tasks, day);
+  const isNew = useIsNew(tasks.map((t) => t.id));
 
   return (
-    <section aria-label="任务列表" className="flex min-w-0 flex-[3_1_460px] flex-col gap-4">
+    <motion.section variants={riseIn} aria-label="任务列表" className="flex min-w-0 flex-[3_1_460px] flex-col gap-4">
       <NewTaskForm />
       {groups.length === 0 && (
         <div className="rounded-[14px] border border-line bg-surface p-8 text-center text-sm text-muted">还没有任务</div>
       )}
-      {groups.map((g) => (
-        <div key={g.title} className="rounded-[14px] border border-line bg-surface px-5 py-4">
-          <h2 className={`mb-1.5 text-sm font-semibold ${g.tone}`}>
-            {g.title} <span className="font-normal text-muted">{g.items.length}</span>
-          </h2>
-          <ul>
-            {g.items.map((t) => (
-              <li key={t.id} className="group flex min-h-11 items-center gap-3 border-t border-divider">
+      {/* Shared layout: ticking a task makes it glide from its group into "已完成". */}
+      <LayoutGroup>
+        {groups.map((g) => (
+          <motion.div
+            key={g.title}
+            layout
+            transition={springs.smooth}
+            style={{ borderRadius: 14 }}
+            className="border border-line bg-surface px-5 py-4"
+          >
+            <motion.h2 layout="position" transition={springs.smooth} className={`mb-1.5 text-sm font-semibold ${g.tone}`}>
+              {g.title} <span className="font-normal text-muted">{g.items.length}</span>
+            </motion.h2>
+            <ul>
+              {g.items.map((t) => (
+                <motion.li
+                  key={t.id}
+                  layoutId={`task-${t.id}`}
+                  layout="position"
+                  initial={enterIf(isNew(t.id))}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={springs.smooth}
+                  className="group flex min-h-11 items-center gap-3 border-t border-divider"
+                >
                 <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                   <input
                     type="checkbox"
@@ -103,6 +124,7 @@ function TaskList() {
                     onChange={(e) => toggle.mutate({ id: t.id, done: e.target.checked })}
                   />
                   <span className={`truncate text-sm ${t.done_at ? "text-faint line-through" : ""}`}>{t.title}</span>
+                  {t.project_title && <span className="shrink-0 truncate text-xs text-muted">· {t.project_title}</span>}
                 </label>
                 <span className={`text-xs tabular-nums ${g.title === "逾期" ? "text-warn" : "text-muted"}`}>
                   {dueLabel(t.due_date, day)}
@@ -122,12 +144,13 @@ function TaskList() {
                 >
                   删除
                 </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </section>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+        ))}
+      </LayoutGroup>
+    </motion.section>
   );
 }
 
@@ -208,7 +231,7 @@ function WeekView() {
   const { data: access } = useCalendarAccess();
   const { data: events = [] } = useCalendarEvents(days[0], days[6]);
   const { data: tasks = [] } = useQuery({ queryKey: ["tasks"], queryFn: listTasks });
-  const toggle = useInvalidating("tasks", (t: { id: number; done: boolean }) => setTaskDone(t.id, t.done));
+  const toggle = useInvalidating(TASK_KEYS, (t: { id: number; done: boolean }) => setTaskDone(t.id, t.done));
 
   return (
     <section aria-label="周视图" className="flex flex-col gap-3">
@@ -273,7 +296,8 @@ function WeekView() {
 }
 
 export function TasksPage() {
-  const [view, setView] = useState<"list" | "week">("list");
+  const view = useNav((s) => s.tasksView);
+  const setView = useNav((s) => s.setTasksView);
   return (
     <div className="mx-auto flex max-w-[1040px] flex-col gap-5">
       <PageHeader title="任务与习惯">
@@ -284,17 +308,25 @@ export function TasksPage() {
           options={[
             { value: "list", label: "列表" },
             { value: "week", label: "周视图" },
+            { value: "projects", label: "项目" },
           ]}
         />
       </PageHeader>
-      {view === "list" ? (
-        <div className="flex flex-wrap items-start gap-5">
-          <TaskList />
-          <HabitPanel />
-        </div>
-      ) : (
-        <WeekView />
-      )}
+      {/* Re-keyed per view so switching replays the staggered entrance. */}
+      <motion.div key={view} variants={stagger(0.05)} initial="initial" animate="animate">
+        {view === "list" && (
+          <div className="flex flex-wrap items-start gap-5">
+            <TaskList />
+            <HabitPanel />
+          </div>
+        )}
+        {view === "week" && (
+          <motion.div variants={riseIn}>
+            <WeekView />
+          </motion.div>
+        )}
+        {view === "projects" && <ProjectsView />}
+      </motion.div>
     </div>
   );
 }

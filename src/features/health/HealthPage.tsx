@@ -119,7 +119,7 @@ function WeightChart({ points }: { points: HealthLog[] }) {
           strokeLinecap="round"
         />
         {xy.map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="#fff" stroke="var(--color-accent)" strokeWidth="2" />
+          <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="var(--color-surface)" stroke="var(--color-accent)" strokeWidth="2" />
         ))}
       </svg>
       <div className="flex justify-between text-xs text-muted tabular-nums">

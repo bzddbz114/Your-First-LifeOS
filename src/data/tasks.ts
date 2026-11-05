@@ -5,18 +5,32 @@ export interface Task {
   title: string;
   due_date: string | null;
   done_at: string | null;
+  project_id: number | null;
+  project_title: string | null;
 }
+
+const TASK_COLUMNS = "t.id, t.title, t.due_date, t.done_at, t.project_id, p.title AS project_title";
+const TASK_ORDER = "t.done_at IS NOT NULL, t.due_date IS NULL, t.due_date, t.id";
 
 export async function listTasks(): Promise<Task[]> {
   const db = await getDb();
   return db.select<Task[]>(
-    "SELECT id, title, due_date, done_at FROM tasks ORDER BY done_at IS NOT NULL, due_date IS NULL, due_date, id",
+    `SELECT ${TASK_COLUMNS} FROM tasks t LEFT JOIN projects p ON p.id = t.project_id ORDER BY ${TASK_ORDER}`,
   );
 }
 
-export async function addTask(title: string, dueDate: string | null) {
+export async function listProjectTasks(projectId: number): Promise<Task[]> {
   const db = await getDb();
-  await db.execute("INSERT INTO tasks (title, due_date) VALUES ($1, $2)", [title, dueDate]);
+  return db.select<Task[]>(
+    `SELECT ${TASK_COLUMNS} FROM tasks t LEFT JOIN projects p ON p.id = t.project_id
+     WHERE t.project_id = $1 ORDER BY ${TASK_ORDER}`,
+    [projectId],
+  );
+}
+
+export async function addTask(title: string, dueDate: string | null, projectId: number | null = null) {
+  const db = await getDb();
+  await db.execute("INSERT INTO tasks (title, due_date, project_id) VALUES ($1, $2, $3)", [title, dueDate, projectId]);
 }
 
 export async function setTaskDone(id: number, done: boolean) {

@@ -1,24 +1,50 @@
-# LifeOS
+# Your First LifeOS
 
-本地优先的个人生活管理桌面应用(macOS):任务与习惯、财务、健康、笔记与日记,共用一份本地 SQLite 数据。
+本地优先的个人生活管理桌面应用(macOS)。任务与习惯、长期项目、财务、健康、笔记与日记共用一份本地 SQLite 数据库,不需要账号,数据不离开你的电脑。
 
-## 技术栈
+## 功能
 
-Tauri 2 · React 19 + TypeScript + Vite · Tailwind CSS 4 · TanStack Query · SQLite(tauri-plugin-sql)
+- **今天**:今日待办、系统日历日程、进行中的项目、习惯打卡、今日支出、身体数据和日记集中在一页。
+- **任务与习惯**:按逾期 / 今天 / 明天 / 未来 7 天分组的任务列表,周视图,带 12 周热力图的习惯。
+- **项目(长程待办)**:为需要几周到几个月才能完成的事建项目,设置开始与目标日期,拆成步骤;同时显示完成进度和时间进度,进度落后时会提醒。步骤就是普通任务,会出现在列表、周视图和今天页里。
+- **AI 拆解**:接入 DeepSeek,一键把项目拆成带截止日期的步骤,确认后再添加。
+- **财务**:记账、分类预算、月度统计。
+- **健康**:睡眠、步数、体重、运动记录。
+- **笔记与日记**:每日日记(带心情)和自由笔记。
+- **日历**:通过 EventKit 只读显示 macOS 日历里的事件。
+- **个性化**:称呼、6 种主题色、浅色 / 深色 / 跟随系统、动画强度、今天页显示哪些卡片。
+- **流畅动画**:基于弹簧物理的界面动效(motion),会遵循系统的「减弱动态效果」设置。
 
-## 开发
+## 开始使用
+
+需要 [Rust 工具链](https://rustup.rs)、Node.js 20+ 和 Xcode Command Line Tools。
 
 ```sh
 npm install
 npm run tauri dev
 ```
 
-需要 Rust 工具链(rustup)和 Xcode Command Line Tools。
+打包:`npm run tauri build`
 
-数据库位于 `~/Library/Application Support/com.lifeos.app/lifeos.db`,迁移在 `src-tauri/migrations/`,于 `src-tauri/src/lib.rs` 注册。
+### 配置 DeepSeek(可选)
+
+1. 在 [DeepSeek 开放平台](https://platform.deepseek.com) 创建 API Key。
+2. 在应用左下角打开 **设置 → AI**,填入 Key。模型默认用 `deepseek-chat`。
+3. 在项目里展开任意一个项目,点 **AI 拆解**。
+
+Key 只保存在本机数据库里。拆解时只发送项目标题、说明、日期和已有步骤,请求由 Rust 端直接发给 `api.deepseek.com`。
+
+## 数据
+
+数据库位于 `~/Library/Application Support/com.lifeos.app/lifeos.db`。迁移文件在 `src-tauri/migrations/`,在 `src-tauri/src/lib.rs` 里注册,启动时自动执行。
+
+## 技术栈
+
+Tauri 2 · React 19 + TypeScript + Vite · Tailwind CSS 4 · TanStack Query · Zustand · motion · SQLite(tauri-plugin-sql)· reqwest
 
 ## 目录
 
-- `src/data/` — 数据访问层(所有 SQL 都在这里)
-- `src/features/` — 各模块页面
-- `src/components/` — 共用组件(侧边栏、卡片)
+- `src/data/`:数据访问层,所有 SQL 都在这里
+- `src/features/`:各模块页面
+- `src/components/`:共用组件(侧边栏、卡片、设置、动画预设)
+- `src-tauri/src/`:Rust 端(日历读取、DeepSeek 请求)

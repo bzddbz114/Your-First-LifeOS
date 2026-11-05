@@ -21,9 +21,104 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
 }
 
+/* Dark appearance (Settings → 外观, or following the system). Accent colors are set from JS. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ground: #161615;
+  --color-sidebar: #1e1e1c;
+  --color-surface: #232321;
+  --color-field: #1b1b1a;
+  --color-line: #31312e;
+  --color-line-strong: #3b3b37;
+  --color-divider: #2a2a27;
+  --color-ink: #ededea;
+  --color-ink-2: #d2d2cd;
+  --color-muted: #a3a39c;
+  --color-faint: #8d8d86;
+  --color-cell: #34342f;
+  --color-warn: #f0884f;
+}
+
+/* The soft tint follows whichever accent is active. */
+:root {
+  --color-accent-soft: color-mix(in srgb, var(--color-accent) 9%, var(--color-surface));
+}
+
 body {
   margin: 0;
   background: var(--color-ground);
   color: var(--color-ink);
   font-family: var(--font-sans);
+}
+
+/*
+ * Fluid micro-interactions. Presses scale down on a spring-like curve (fast in, slight
+ * overshoot out), the way iOS controls respond to touch. Larger motion lives in
+ * motion/react springs; see src/components/motion.ts.
+ */
+:root {
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button,
+input[type="checkbox"] {
+  transition:
+    transform 0.4s var(--ease-spring),
+    background-color 0.2s var(--ease-out-soft),
+    color 0.2s var(--ease-out-soft),
+    border-color 0.2s var(--ease-out-soft),
+    box-shadow 0.2s var(--ease-out-soft),
+    opacity 0.2s var(--ease-out-soft);
+}
+
+button:not(:disabled):active {
+  transform: scale(0.96);
+  transition-duration: 0.08s;
+}
+
+input[type="checkbox"]:active {
+  transform: scale(0.85);
+  transition-duration: 0.08s;
+}
+
+input[type="checkbox"]:checked {
+  animation: check-pop 0.45s var(--ease-spring);
+}
+
+@keyframes check-pop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+input,
+textarea,
+select {
+  transition:
+    border-color 0.2s var(--ease-out-soft),
+    box-shadow 0.25s var(--ease-out-soft),
+    opacity 0.2s var(--ease-out-soft);
+}
+
+input:not([type="checkbox"]):focus,
+textarea:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Settings → 动画 → 减弱: same as the system setting, but app-local. */
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
 }

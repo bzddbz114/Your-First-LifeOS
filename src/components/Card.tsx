@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
+import { motion } from "motion/react";
+import { riseIn, springs } from "./motion";
 
 export function Card({
   title,
@@ -12,13 +14,16 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <section className={`flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-5 ${className}`}>
+    <motion.section
+      variants={riseIn}
+      className={`flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-5 ${className}`}
+    >
       <div className="flex items-center gap-2">
         <h2 className="flex-1 text-[15px] font-semibold">{title}</h2>
         {aside}
       </div>
       {children}
-    </section>
+    </motion.section>
   );
 }
 
@@ -32,20 +37,20 @@ export function EmptyState({ children }: { children: ReactNode }) {
 
 export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <header className="flex flex-wrap items-center gap-3">
+    <motion.header variants={riseIn} className="flex flex-wrap items-center gap-3">
       <h1 className="flex-1 text-[28px] font-bold tracking-tight">{title}</h1>
       {children}
-    </header>
+    </motion.header>
   );
 }
 
 export function Stat({ label, value, sub, tone = "text-ink" }: { label: string; value: string; sub?: string; tone?: string }) {
   return (
-    <div className="min-w-0 flex-[1_1_200px] rounded-[14px] border border-line bg-surface px-5 py-[18px]">
+    <motion.div variants={riseIn} className="min-w-0 flex-[1_1_200px] rounded-[14px] border border-line bg-surface px-5 py-[18px]">
       <div className="text-xs text-muted">{label}</div>
       <div className={`mt-1 text-[26px] font-bold tracking-tight tabular-nums ${tone}`}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-muted">{sub}</div>}
-    </div>
+    </motion.div>
   );
 }
 
@@ -60,6 +65,7 @@ export function Segmented<T extends string>({
   value: T;
   onChange: (v: T) => void;
 }) {
+  const pillId = useId();
   return (
     <div role="group" aria-label={label} className="flex rounded-[10px] bg-sidebar p-[3px]">
       {options.map((o) => (
@@ -68,11 +74,18 @@ export function Segmented<T extends string>({
           type="button"
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
-          className={`min-h-[38px] flex-1 rounded-lg px-3.5 text-[13px] ${
-            o.value === value ? "bg-surface font-semibold text-ink shadow-sm" : "text-ink-2"
+          className={`relative min-h-[38px] flex-1 rounded-lg px-3.5 text-[13px] transition-colors ${
+            o.value === value ? "font-semibold text-ink" : "text-ink-2 hover:text-ink"
           }`}
         >
-          {o.label}
+          {o.value === value && (
+            <motion.span
+              layoutId={pillId}
+              transition={springs.snappy}
+              className="absolute inset-0 rounded-lg bg-surface shadow-sm"
+            />
+          )}
+          <span className="relative">{o.label}</span>
         </button>
       ))}
     </div>
@@ -132,7 +145,14 @@ export function BarChart({
           <div aria-hidden="true" className="absolute inset-x-0 border-t border-dashed border-faint" style={{ bottom: scale(refLine) }} />
         )}
         {bars.map((b) => (
-          <div key={b.key} title={b.title} className={`flex-1 rounded-t-[5px] ${b.tone}`} style={{ height: scale(b.value) }} />
+          <motion.div
+            key={b.key}
+            title={b.title}
+            className={`flex-1 rounded-t-[5px] ${b.tone}`}
+            initial={{ height: 0 }}
+            animate={{ height: scale(b.value) }}
+            transition={springs.smooth}
+          />
         ))}
       </div>
       <div className="mt-1.5 flex gap-2">

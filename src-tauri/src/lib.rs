@@ -1,4 +1,5 @@
 mod calendar;
+mod deepseek;
 
 use tauri_plugin_sql::{Migration, MigrationKind};
 
@@ -14,6 +15,18 @@ fn migrations() -> Vec<Migration> {
             version: 2,
             description: "create_finance_health_notes",
             sql: include_str!("../migrations/002_finance_health_notes.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 3,
+            description: "create_projects",
+            sql: include_str!("../migrations/003_projects.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 4,
+            description: "create_settings",
+            sql: include_str!("../migrations/004_settings.sql"),
             kind: MigrationKind::Up,
         },
     ]
@@ -32,6 +45,7 @@ pub fn run() {
             calendar::calendar_access_status,
             calendar::calendar_request_access,
             calendar::calendar_events,
+            deepseek::deepseek_chat,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

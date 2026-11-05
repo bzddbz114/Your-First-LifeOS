@@ -7,16 +7,21 @@ import { addTask, deleteTask, listTasks, setTaskDone, type Task } from "../../da
 import { addHabit, listHabits, setHabitChecked } from "../../data/habits";
 import { listCategories, listTransactions, listTransactionsOn } from "../../data/finance";
 import { latestHealthLog, listHealthLogs } from "../../data/health";
-import { useInvalidating } from "../../data/useInvalidating";
+import { ProjectsOverview } from "../tasks/ProjectsView";
+import type { TasksView } from "../../data/nav";
+import { usePrefs } from "../../data/prefs";
+import { AnimatePresence, motion } from "motion/react";
+import { enterIf, riseIn, springs, useIsNew } from "../../components/motion";
+import { TASK_KEYS, useInvalidating } from "../../data/useInvalidating";
 import { AddInput, Card } from "../../components/Card";
 import type { PageId } from "../../components/Sidebar";
 import { JournalEditor } from "../notes/NotesPage";
 
-type Navigate = (page: PageId) => void;
+type Navigate = (page: PageId, tasksView?: TasksView) => void;
 
-function CardLink({ to, onNavigate, children }: { to: PageId; onNavigate: Navigate; children: string }) {
+function CardLink({ to, view, onNavigate, children }: { to: PageId; view?: TasksView; onNavigate: Navigate; children: string }) {
   return (
-    <button className="text-[13px] text-accent hover:text-accent-ink" onClick={() => onNavigate(to)}>
+    <button className="text-[13px] text-accent hover:text-accent-ink" onClick={() => onNavigate(to, view)}>
       {children}
     </button>
   );
@@ -30,31 +35,41 @@ function greeting(): string {
   return "晚上好";
 }
 
-/** Open tasks due today or earlier (or undated), plus ones finished today. */
+/** Open tasks due today or earlier (or undated, outside a project), plus ones finished today. */
 function isForToday(t: Task, day: string) {
   if (t.done_at) return t.done_at.slice(0, 10) === day;
-  return !t.due_date || t.due_date <= day;
+  return t.due_date ? t.due_date <= day : t.project_id === null;
 }
 
 function Tasks({ onNavigate }: { onNavigate: Navigate }) {
   const day = today();
   const { data: all = [] } = useQuery({ queryKey: ["tasks"], queryFn: listTasks });
   const tasks = all.filter((t) => isForToday(t, day));
-  const add = useInvalidating("tasks", (title: string) => addTask(title, day));
-  const toggle = useInvalidating("tasks", (t: { id: number; done: boolean }) => setTaskDone(t.id, t.done));
-  const remove = useInvalidating("tasks", deleteTask);
+  const add = useInvalidating(TASK_KEYS, (title: string) => addTask(title, day));
+  const toggle = useInvalidating(TASK_KEYS, (t: { id: number; done: boolean }) => setTaskDone(t.id, t.done));
+  const remove = useInvalidating(TASK_KEYS, deleteTask);
+  const isNew = useIsNew(tasks.map((t) => t.id));
 
   return (
     <Card
       title="今日待办"
       className="flex-[2_1_420px]"
-      aside={<CardLink to="tasks" onNavigate={onNavigate}>全部任务</CardLink>}
+      aside={<CardLink to="tasks" view="list" onNavigate={onNavigate}>全部任务</CardLink>}
     >
       <ul>
+        <AnimatePresence initial={false}>
         {tasks.map((t) => {
           const overdue = !t.done_at && !!t.due_date && t.due_date < day;
           return (
-            <li key={t.id} className="group flex min-h-11 items-center gap-3 border-b border-divider">
+            <motion.li
+              key={t.id}
+              layout="position"
+              initial={enterIf(isNew(t.id))}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 16, transition: { duration: 0.16 } }}
+              transition={springs.smooth}
+              className="group flex min-h-11 items-center gap-3 border-b border-divider"
+            >
               <label className="flex flex-1 cursor-pointer items-center gap-3">
                 <input
                   type="checkbox"
@@ -62,7 +77,8 @@ function Tasks({ onNavigate }: { onNavigate: Navigate }) {
                   checked={!!t.done_at}
                   onChange={(e) => toggle.mutate({ id: t.id, done: e.target.checked })}
                 />
-                <span className={`text-sm ${t.done_at ? "text-faint line-through" : ""}`}>{t.title}</span>
+                <span className={`text-sm transition-colors ${t.done_at ? "text-faint line-through" : ""}`}>{t.title}</span>
+                {t.project_title && <span className="text-xs text-muted">· {t.project_title}</span>}
               </label>
               {overdue && <span className="text-xs text-warn">已逾期</span>}
               <button
@@ -71,9 +87,10 @@ function Tasks({ onNavigate }: { onNavigate: Navigate }) {
               >
                 删除
               </button>
-            </li>
+            </motion.li>
           );
         })}
+        </AnimatePresence>
         {tasks.length === 0 && <li className="py-3 text-sm text-muted">还没有待办,在下面添加第一件事</li>}
       </ul>
       <AddInput placeholder="添加待办,回车确认" onAdd={(v) => add.mutate(v)} />
@@ -99,18 +116,28 @@ function Habits() {
       <ul className="flex flex-col gap-2.5">
         {habits.map((h) => (
           <li key={h.id} className="flex items-center gap-3">
-            <button
+            <motion.button
               aria-pressed={h.checked}
               aria-label={`打卡:${h.name}`}
               onClick={() => toggle.mutate({ id: h.id, checked: !h.checked })}
-              className={`flex size-11 shrink-0 items-center justify-center rounded-xl border ${
+              whileTap={{ scale: 0.88 }}
+              animate={{ scale: h.checked ? [1, 1.12, 1] : 1 }}
+              transition={springs.snappy}
+              className={`flex size-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-200 ${
                 h.checked ? "border-accent bg-accent text-white" : "border-line-strong bg-surface text-faint"
               }`}
             >
               <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 12l5 5 9-10" />
+                {/* The check draws itself when ticked. */}
+                <motion.path
+                  key={String(h.checked)}
+                  d="M5 12l5 5 9-10"
+                  initial={{ pathLength: h.checked ? 0 : 1 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ ...springs.smooth, delay: 0.05 }}
+                />
               </svg>
-            </button>
+            </motion.button>
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm">{h.name}</div>
               <div className="text-xs text-muted">连续 {h.streak} 天</div>
@@ -228,7 +255,12 @@ function Spending({ onNavigate }: { onNavigate: Navigate }) {
             <span>{pct}%</span>
           </div>
           <div className="h-2 rounded bg-sidebar">
-            <div className={`h-2 rounded ${pct >= 80 ? "bg-[#c2410c]" : "bg-accent"}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+            <motion.div
+              className={`h-2 rounded ${pct >= 80 ? "bg-[#c2410c]" : "bg-accent"}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(pct, 100)}%` }}
+              transition={springs.gentle}
+            />
           </div>
         </div>
       )}
@@ -282,33 +314,43 @@ function Body({ onNavigate }: { onNavigate: Navigate }) {
 
 export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
   const day = today();
+  const prefs = usePrefs();
+  const show = (m: (typeof prefs.homeHidden)[number]) => !prefs.homeHidden.includes(m);
   const { data: all = [] } = useQuery({ queryKey: ["tasks"], queryFn: listTasks });
   const remaining = all.filter((t) => !t.done_at && isForToday(t, day)).length;
   const label = new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" });
 
   return (
     <div className="mx-auto flex max-w-[1040px] flex-col gap-5">
-      <header>
+      <motion.header variants={riseIn}>
         <p className="mb-1 text-[13px] text-muted">{label}</p>
         <h1 className="text-[30px] font-bold tracking-tight">
-          {greeting()},{remaining > 0 ? `今天还剩 ${remaining} 件事` : "今天的事都做完了"}
+          {greeting()}{prefs.name ? `,${prefs.name}` : ""},{remaining > 0 ? `今天还剩 ${remaining} 件事` : "今天的事都做完了"}
         </h1>
-      </header>
+      </motion.header>
 
       <div className="flex flex-wrap gap-5">
         <Tasks onNavigate={onNavigate} />
-        <Schedule />
+        {show("schedule") && <Schedule />}
       </div>
 
-      <div className="flex flex-wrap gap-5">
-        <Habits />
-        <Spending onNavigate={onNavigate} />
-        <Body onNavigate={onNavigate} />
-      </div>
+      {show("projects") && (
+        <Card title="项目" aside={<CardLink to="tasks" view="projects" onNavigate={onNavigate}>全部项目</CardLink>}>
+          <ProjectsOverview />
+        </Card>
+      )}
 
-      <Card title="日记" aside={<CardLink to="notes" onNavigate={onNavigate}>打开完整日记</CardLink>}>
+      {(show("habits") || show("spending") || show("body")) && (
+        <div className="flex flex-wrap gap-5">
+          {show("habits") && <Habits />}
+          {show("spending") && <Spending onNavigate={onNavigate} />}
+          {show("body") && <Body onNavigate={onNavigate} />}
+        </div>
+      )}
+
+      {show("journal") && <Card title="日记" aside={<CardLink to="notes" onNavigate={onNavigate}>打开完整日记</CardLink>}>
         <JournalEditor day={day} compact />
-      </Card>
+      </Card>}
     </div>
   );
 }
