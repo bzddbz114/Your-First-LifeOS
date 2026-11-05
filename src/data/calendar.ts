@@ -4,7 +4,15 @@ import { addDays, formatDay } from "./db";
 
 /** Read-only events from the macOS Calendar app (all accounts the user has added there). */
 export interface CalendarEvent {
+  /** Unique per occurrence. */
   id: string;
+  /** EventKit identifier, shared across a recurring series. */
+  eventId: string;
+  calendarId: string | null;
+  notes: string | null;
+  /** False for read-only calendars (subscriptions, holidays…). */
+  editable: boolean;
+  recurring: boolean;
   title: string;
   startMs: number;
   endMs: number;
@@ -63,4 +71,53 @@ export function formatTime(ms: number) {
 export function timeLabel(event: CalendarEvent, day: string) {
   if (event.allDay) return "全天";
   return formatDay(new Date(event.startMs)) === day ? formatTime(event.startMs) : "续";
+}
+
+export interface CalendarInfo {
+  id: string;
+  title: string;
+  color: string | null;
+  isDefault: boolean;
+}
+
+/** Calendars that accept new events, the system default first. */
+export function useWritableCalendars() {
+  const { data: access } = useCalendarAccess();
+  return useQuery({
+    queryKey: ["calendar", "list"],
+    enabled: access === "granted",
+    queryFn: () => invoke<CalendarInfo[]>("calendar_list"),
+  });
+}
+
+export interface EventInput {
+  /** Omitted for a new event. */
+  eventId?: string;
+  /** Start of the occurrence being edited, for recurring events. */
+  occurrenceStartMs?: number;
+  title: string;
+  startMs: number;
+  endMs: number;
+  allDay: boolean;
+  calendarId?: string | null;
+  location?: string | null;
+  notes?: string | null;
+}
+
+/** Writes to the macOS Calendar database, then refreshes every calendar query. */
+export function useSaveEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: EventInput) => invoke<string>("calendar_save_event", { input }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["calendar", "events"] }),
+  });
+}
+
+export function useDeleteEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (e: Pick<CalendarEvent, "eventId" | "startMs">) =>
+      invoke<void>("calendar_delete_event", { eventId: e.eventId, occurrenceStartMs: e.startMs }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["calendar", "events"] }),
+  });
 }

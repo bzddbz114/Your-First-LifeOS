@@ -1,10 +1,66 @@
 import Database from "@tauri-apps/plugin-sql";
 
-let db: Promise<Database> | null = null;
+/** The original database: account 1's data, plus the account registry. Migrated by the Rust plugin. */
+export const MAIN_DB = "sqlite:lifeos.db";
 
+/** Every other account keeps its data in its own file. */
+export const accountDbUrl = (accountId: number) => (accountId === 1 ? MAIN_DB : `sqlite:lifeos-${accountId}.db`);
+
+// Same SQL files the Rust side registers, so extra account databases get an identical schema.
+const MIGRATIONS = Object.entries(
+  import.meta.glob("../../src-tauri/migrations/*.sql", { query: "?raw", import: "default", eager: true }) as Record<string, string>,
+)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, sql]) => sql);
+
+/** Applies pending migrations to a non-main database, tracking progress in PRAGMA user_version. */
+async function migrate(db: Database) {
+  const [{ user_version }] = await db.select<{ user_version: number }[]>("PRAGMA user_version");
+  for (let v = user_version; v < MIGRATIONS.length; v++) {
+    const statements = MIGRATIONS[v]
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("--"))
+      .join("\n")
+      .split(/;\s*(?:\n|$)/)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    for (const sql of statements) await db.execute(sql);
+    await db.execute(`PRAGMA user_version = ${v + 1}`);
+  }
+}
+
+const opened = new Map<string, Promise<Database>>();
+
+export function openDb(url: string): Promise<Database> {
+  let p = opened.get(url);
+  if (!p) {
+    p = Database.load(url).then(async (db) => {
+      if (url !== MAIN_DB) await migrate(db);
+      return db;
+    });
+    p.catch(() => opened.delete(url));
+    opened.set(url, p);
+  }
+  return p;
+}
+
+/** Forgets a cached connection (after closing it, e.g. before deleting the account's file). */
+export async function closeDb(url: string) {
+  const p = opened.get(url);
+  opened.delete(url);
+  if (p) await (await p).close(url);
+}
+
+let activeUrl = MAIN_DB;
+
+/** Points every data function at the signed-in account's database. */
+export function setActiveDb(url: string) {
+  activeUrl = url;
+}
+
+/** The signed-in account's database. */
 export function getDb(): Promise<Database> {
-  db ??= Database.load("sqlite:lifeos.db");
-  return db;
+  return openDb(activeUrl);
 }
 
 export function formatDay(d: Date): string {

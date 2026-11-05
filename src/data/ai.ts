@@ -58,3 +58,30 @@ export async function suggestSteps(project: Project, existing: Task[]): Promise<
     }))
     .filter((s) => s.title);
 }
+
+const QUOTE_PROMPT = `你为一个个人生活管理应用的首页写「每日一句」。
+要求:中文,一句话,不超过 36 个字;要么温暖励志,要么机智有趣,不说教、不鸡汤、不用感叹号堆砌;
+可以结合用户今天的情况,但不要逐条复述任务。
+只输出 JSON:{"text":"...","kind":"励志 或 有趣"}`;
+
+/** A fresh line for today from DeepSeek, lightly tailored to the day. Sends only the context listed here. */
+export async function generateQuote(ctx: { weekday: string; hour: number; openTasks: string[]; activeProjects: string[] }) {
+  const [apiKey, model] = await Promise.all([getSetting("deepseek_api_key"), getSetting("deepseek_model")]);
+  if (!apiKey) throw new Error("还没有设置 DeepSeek API Key");
+  const lines = [
+    `今天是${ctx.weekday},现在 ${ctx.hour} 点。`,
+    ctx.openTasks.length ? `今天还有 ${ctx.openTasks.length} 件待办,例如:${ctx.openTasks.slice(0, 3).join("、")}` : "今天的待办都完成了。",
+    ctx.activeProjects.length > 0 && `进行中的项目:${ctx.activeProjects.slice(0, 3).join("、")}`,
+  ].filter(Boolean);
+  const reply = await invoke<string>("deepseek_chat", {
+    apiKey,
+    model: model || DEFAULT_DEEPSEEK_MODEL,
+    messages: [
+      { role: "system", content: QUOTE_PROMPT },
+      { role: "user", content: lines.join("\n") },
+    ],
+  });
+  const parsed = JSON.parse(reply) as { text?: unknown; kind?: unknown };
+  if (typeof parsed.text !== "string" || !parsed.text.trim()) throw new Error("DeepSeek 没有给出句子,请重试");
+  return { text: parsed.text.trim(), kind: parsed.kind === "有趣" ? ("有趣" as const) : ("励志" as const) };
+}

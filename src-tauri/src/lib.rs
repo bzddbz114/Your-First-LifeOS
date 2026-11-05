@@ -1,3 +1,4 @@
+mod accounts;
 mod calendar;
 mod deepseek;
 
@@ -45,7 +46,11 @@ pub fn run() {
             calendar::calendar_access_status,
             calendar::calendar_request_access,
             calendar::calendar_events,
+            calendar::calendar_list,
+            calendar::calendar_save_event,
+            calendar::calendar_delete_event,
             deepseek::deepseek_chat,
+            accounts::delete_account_data,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

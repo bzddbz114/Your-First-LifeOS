@@ -3,8 +3,9 @@ import { useNav } from "../data/nav";
 import { motion } from "motion/react";
 import { springs } from "./motion";
 import { SettingsDialog } from "./SettingsDialog";
+import { AccountMenu } from "../features/accounts/AccountMenu";
 
-export type PageId = "today" | "tasks" | "projects" | "finance" | "health" | "notes";
+export type PageId = "today" | "tasks" | "calendar" | "projects" | "finance" | "health" | "notes";
 
 const icon = (children: ReactNode) => (
   <svg
@@ -40,6 +41,16 @@ export const NAV: { id: PageId; label: string; icon: ReactNode }[] = [
       <>
         <rect x="3" y="3" width="18" height="18" rx="4" />
         <path d="M8 12l3 3 5-6" />
+      </>,
+    ),
+  },
+  {
+    id: "calendar",
+    label: "日程",
+    icon: icon(
+      <>
+        <rect x="3" y="5" width="18" height="16" rx="3" />
+        <path d="M3 10h18M8 3v4M16 3v4" />
       </>,
     ),
   },
@@ -84,15 +95,7 @@ export function Sidebar({ active, onNavigate }: { active: PageId; onNavigate: (i
       aria-label="主导航"
       className="sidebar flex h-full w-[220px] shrink-0 flex-col overflow-y-auto gap-1 border-r border-line-strong bg-sidebar px-3 py-5"
     >
-      <div className="flex items-center gap-2.5 px-2.5 pb-4 pt-1">
-        <div className="flex size-7 items-center justify-center rounded-lg bg-ink">
-          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-surface)" strokeWidth="2" strokeLinecap="round">
-            <circle cx="12" cy="12" r="8" />
-            <path d="M12 4v8l5 3" />
-          </svg>
-        </div>
-        <span className="text-base font-bold tracking-tight">LifeOS</span>
-      </div>
+      <AccountMenu />
       {NAV.map((item) => {
         const on = item.id === active;
         return (

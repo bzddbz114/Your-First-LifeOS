@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { occursOn, useCalendarEvents } from "../../data/calendar";
 import { CalendarGate, EventRow } from "../../components/Calendar";
@@ -8,10 +8,11 @@ import { addHabit, listHabits, setHabitChecked } from "../../data/habits";
 import { listCategories, listTransactions, listTransactionsOn } from "../../data/finance";
 import { latestHealthLog, listHealthLogs } from "../../data/health";
 import { ProjectsOverview } from "../projects/ProjectsView";
-import type { TasksView } from "../../data/nav";
+import { HomeHero } from "./HomeHero";
+import { useNav, type TasksView } from "../../data/nav";
 import { usePrefs } from "../../data/prefs";
 import { AnimatePresence, motion } from "motion/react";
-import { enterIf, riseIn, springs, useIsNew } from "../../components/motion";
+import { enterIf, springs, useIsNew } from "../../components/motion";
 import { TASK_KEYS, useInvalidating } from "../../data/useInvalidating";
 import { AddInput, Card } from "../../components/Card";
 import type { PageId } from "../../components/Sidebar";
@@ -24,6 +25,14 @@ function CardLink({ to, view, onNavigate, children }: { to: PageId; view?: Tasks
     <button className="text-[13px] text-accent hover:text-accent-ink" onClick={() => onNavigate(to, view)}>
       {children}
     </button>
+  );
+}
+
+function HomeIcon({ children }: { children: ReactNode }) {
+  return (
+    <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      {children}
+    </svg>
   );
 }
 
@@ -52,7 +61,8 @@ function Tasks({ onNavigate }: { onNavigate: Navigate }) {
 
   return (
     <Card
-      lift
+      lift reveal code="01 / TODO" icon={<HomeIcon><><rect x="3" y="3" width="18" height="18" rx="4" /><path d="M8 12l3 3 5-6" /></></HomeIcon>}
+      onOpen={() => onNavigate("tasks", "list")}
       title="今日待办"
       className="flex-[2_1_420px]"
       aside={<CardLink to="tasks" view="list" onNavigate={onNavigate}>全部任务</CardLink>}
@@ -101,6 +111,7 @@ function Tasks({ onNavigate }: { onNavigate: Navigate }) {
 
 function Habits() {
   const day = today();
+  const navigate = useNav((s) => s.navigate);
   const { data: habits = [] } = useQuery({ queryKey: ["habits"], queryFn: () => listHabits(day) });
   const add = useInvalidating("habits", addHabit);
   const toggle = useInvalidating("habits", (h: { id: number; checked: boolean }) =>
@@ -110,7 +121,8 @@ function Habits() {
 
   return (
     <Card
-      lift
+      lift reveal code="04 / HABITS" icon={<HomeIcon><path d="M12 3c1 3 4 4.5 4 8a4 4 0 0 1-8 0c0-1.5.7-2.6 1.5-3.5C10 9 11 7 12 3z" /></HomeIcon>}
+      onOpen={() => navigate("tasks", "list")}
       title="习惯"
       className="flex-[1_1_300px]"
       aside={habits.length > 0 && <span className="text-[13px] text-muted">今日 {done}/{habits.length}</span>}
@@ -210,7 +222,7 @@ function Schedule() {
   const end = addDays(day, 7);
   const upcoming = all.filter((t) => !t.done_at && t.due_date && t.due_date > day && t.due_date <= end);
   return (
-    <Card lift title="日程" className="flex-[1_1_280px]">
+    <Card lift reveal code="02 / SCHEDULE" icon={<HomeIcon><><rect x="3" y="5" width="18" height="16" rx="3" /><path d="M3 10h18M8 3v4M16 3v4" /></></HomeIcon>} onOpen={() => useNav.setState({ page: "calendar", calendarView: "day" })} title="日程" className="flex-[1_1_280px]">
       <CalendarGate>
         <TodayEvents />
       </CalendarGate>
@@ -246,7 +258,7 @@ function Spending({ onNavigate }: { onNavigate: Navigate }) {
   const pct = budget ? Math.round((spentMonth / budget) * 100) : null;
 
   return (
-    <Card lift title="今日支出" className="flex-[1_1_260px]" aside={<CardLink to="finance" onNavigate={onNavigate}>账本</CardLink>}>
+    <Card lift reveal code="05 / EXPENSE" icon={<HomeIcon><><rect x="3" y="6" width="18" height="14" rx="3" /><path d="M3 10h18M16 15h2" /></></HomeIcon>} onOpen={() => onNavigate("finance")} title="今日支出" className="flex-[1_1_260px]" aside={<CardLink to="finance" onNavigate={onNavigate}>账本</CardLink>}>
       <div className="text-[32px] font-bold tracking-tight tabular-nums">{formatMoney(spentToday)}</div>
       {pct !== null && (
         <div>
@@ -293,7 +305,7 @@ function Body({ onNavigate }: { onNavigate: Navigate }) {
   const workout = logs.filter((l) => l.kind === "workout").reduce((s, l) => s + l.value, 0);
 
   return (
-    <Card lift title="身体" className="flex-[1_1_260px]" aside={<CardLink to="health" onNavigate={onNavigate}>健康</CardLink>}>
+    <Card lift reveal code="06 / BODY" icon={<HomeIcon><path d="M3 12h4l2-4 3 8 2-4h7" /></HomeIcon>} onOpen={() => onNavigate("health")} title="身体" className="flex-[1_1_260px]" aside={<CardLink to="health" onNavigate={onNavigate}>健康</CardLink>}>
       <div>
         <div className="text-xs text-muted">昨晚睡眠</div>
         <div className="text-[32px] font-bold tracking-tight">{sleep ? formatMinutes(sleep.value) : "—"}</div>
@@ -320,16 +332,10 @@ export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
   const show = (m: (typeof prefs.homeHidden)[number]) => !prefs.homeHidden.includes(m);
   const { data: all = [] } = useQuery({ queryKey: ["tasks"], queryFn: listTasks });
   const remaining = all.filter((t) => !t.done_at && isForToday(t, day)).length;
-  const label = new Date().toLocaleDateString("zh-CN", { month: "long", day: "numeric", weekday: "long" });
 
   return (
     <div className="mx-auto flex max-w-[1040px] flex-col gap-5">
-      <motion.header variants={riseIn}>
-        <p className="mb-1 text-[13px] text-muted">{label}</p>
-        <h1 className="text-[30px] font-bold tracking-tight">
-          {greeting()}{prefs.name ? `,${prefs.name}` : ""},{remaining > 0 ? `今天还剩 ${remaining} 件事` : "今天的事都做完了"}
-        </h1>
-      </motion.header>
+      <HomeHero greeting={`${greeting()}${prefs.name ? `,${prefs.name}` : ""}`} remaining={remaining} />
 
       <div className="flex flex-wrap gap-5">
         <Tasks onNavigate={onNavigate} />
@@ -337,7 +343,7 @@ export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
       </div>
 
       {show("projects") && (
-        <Card lift title="项目" aside={<CardLink to="projects" onNavigate={onNavigate}>全部项目</CardLink>}>
+        <Card lift reveal code="03 / PROJECTS" icon={<HomeIcon><><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><path d="M8 14h8" /></></HomeIcon>} onOpen={() => onNavigate("projects")} title="项目" aside={<CardLink to="projects" onNavigate={onNavigate}>全部项目</CardLink>}>
           <ProjectsOverview />
         </Card>
       )}
@@ -350,7 +356,7 @@ export function TodayPage({ onNavigate }: { onNavigate: Navigate }) {
         </div>
       )}
 
-      {show("journal") && <Card lift title="日记" aside={<CardLink to="notes" onNavigate={onNavigate}>打开完整日记</CardLink>}>
+      {show("journal") && <Card lift reveal code="07 / JOURNAL" icon={<HomeIcon><><path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z" /><path d="M6 3v18M10 8h5M10 12h5" /></></HomeIcon>} onOpen={() => onNavigate("notes")} title="日记" aside={<CardLink to="notes" onNavigate={onNavigate}>打开完整日记</CardLink>}>
         <JournalEditor day={day} compact />
       </Card>}
     </div>

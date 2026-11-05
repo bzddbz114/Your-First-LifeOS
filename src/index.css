@@ -19,6 +19,9 @@
   --color-accent-ink: #1e3f99;
   --color-warn: #b4410e;
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  /* ui-serif is New York on macOS; Songti carries the Chinese. */
+  --font-serif: ui-serif, "New York", "Songti SC", "STSong", Georgia, serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 /* Dark appearance (Settings → 外观, or following the system). Accent colors are set from JS. */
@@ -275,4 +278,51 @@ main:has(.panel-lift:hover) .panel-lift:not(:hover) {
 
 .panel-sheet {
   box-shadow: var(--panel-shadow), 0 28px 70px -16px rgba(0, 0, 0, 0.35);
+}
+
+/* ───────────────────────── Home themes (Settings → 个性化 → 主页主题) ───────────────────────── */
+.hud-only {
+  display: none;
+}
+:root[data-home="hud"] .hud-only {
+  display: inline;
+}
+
+/* Editorial: warm paper wash behind the hero, serif card titles. */
+.hero-editorial {
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--color-accent) 7%, transparent), transparent 55%),
+    radial-gradient(90% 120% at 100% 100%, color-mix(in srgb, #e8a25c 10%, transparent), transparent 60%),
+    var(--color-surface);
+}
+:root[data-home="editorial"] .home-card .card-title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  letter-spacing: 0.01em;
+}
+
+/* HUD: faint engineering grid, square corners, accent corner ticks on cards. */
+.hero-hud {
+  border-radius: 4px;
+  background:
+    linear-gradient(var(--color-divider) 1px, transparent 1px) 0 0 / 28px 28px,
+    linear-gradient(90deg, var(--color-divider) 1px, transparent 1px) 0 0 / 28px 28px,
+    var(--color-surface);
+}
+:root[data-home="hud"] .home-card {
+  border-radius: 4px;
+  background-image:
+    linear-gradient(var(--color-accent), var(--color-accent)), linear-gradient(var(--color-accent), var(--color-accent)),
+    linear-gradient(var(--color-accent), var(--color-accent)), linear-gradient(var(--color-accent), var(--color-accent));
+  background-size: 14px 2px, 2px 14px, 14px 2px, 2px 14px;
+  background-position: top left, top left, bottom right, bottom right;
+  background-repeat: no-repeat;
+}
+:root[data-home="hud"] .home-card .card-icon {
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+:root[data-home="hud"] .home-card .card-title {
+  letter-spacing: 0.02em;
 }

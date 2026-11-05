@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import { riseIn, springs } from "./motion";
 import { usePrefs } from "../data/prefs";
 
@@ -20,11 +20,47 @@ function useLiftScale(enabled: boolean) {
   return [ref, scale] as const;
 }
 
+/**
+ * Scroll reveal for Today cards, per home theme: editorial rises slowly out of a blur;
+ * HUD wipes in from the left like a panel powering on.
+ */
+const REVEAL: Record<"editorial" | "hud", Variants> = {
+  editorial: {
+    hidden: { opacity: 0, y: 48, filter: "blur(6px)" },
+    shown: { opacity: 1, y: 0, filter: "blur(0px)", transition: { type: "spring", stiffness: 110, damping: 20, mass: 1 } },
+  },
+  hud: {
+    hidden: { opacity: 0, x: -28, clipPath: "inset(0 100% 0 0)" },
+    shown: {
+      opacity: 1,
+      x: 0,
+      clipPath: "inset(0 0% 0 0)",
+      transition: { duration: 0.6, ease: [0.2, 0.8, 0.2, 1] },
+      transitionEnd: { clipPath: "none" },
+    },
+  },
+};
+
+/** The header icon floats in a beat after its card, under either entrance. */
+const ICON: Variants = {
+  initial: { opacity: 0, y: 10, scale: 0.6, rotate: -14 },
+  animate: { opacity: 1, y: 0, scale: 1, rotate: 0, transition: { ...springs.snappy, delay: 0.12 } },
+  hidden: { opacity: 0, y: 14, scale: 0.5, rotate: -18 },
+  shown: { opacity: 1, y: 0, scale: 1, rotate: 0, transition: { type: "spring", stiffness: 300, damping: 14, delay: 0.22 } },
+};
+
+/** Clicks landing on (or inside) these keep their own meaning instead of opening the card. */
+const INTERACTIVE = "a, button, input, textarea, select, label, summary, [role='button'], [role='checkbox'], [contenteditable='true']";
+
 export function Card({
   title,
   aside,
   className = "",
   lift = false,
+  onOpen,
+  reveal = false,
+  icon,
+  code,
   children,
 }: {
   title: string;
@@ -32,21 +68,61 @@ export function Card({
   className?: string;
   /** Magnify on hover (Today page), if the user hasn't turned it off. */
   lift?: boolean;
+  /** Makes the card's blank areas a link into its full page. */
+  onOpen?: () => void;
+  /** Animate in when scrolled into view instead of with the page. */
+  reveal?: boolean;
+  /** Small glyph before the title. */
+  icon?: ReactNode;
+  /** Short label such as "01 / TODO", shown only by the HUD home theme. */
+  code?: string;
   children: ReactNode;
 }) {
-  const { hoverZoom } = usePrefs();
+  const { hoverZoom, homeTheme } = usePrefs();
   const on = lift && hoverZoom;
   const [ref, scale] = useLiftScale(on);
   return (
     <motion.section
       ref={ref}
-      variants={riseIn}
+      {...(reveal
+        ? { variants: REVEAL[homeTheme] ?? REVEAL.editorial, initial: "hidden", whileInView: "shown", viewport: { once: true, amount: 0.15 } }
+        : { variants: riseIn })}
       whileHover={on ? { scale, y: -3, transition: springs.smooth } : undefined}
-      className={`panel flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-5 ${on ? "panel-lift" : ""} ${className}`}
+      onClick={
+        onOpen &&
+        ((e) => {
+          if ((e.target as Element).closest(INTERACTIVE)) return;
+          if (window.getSelection()?.toString()) return; // finishing a text selection, not a click
+          onOpen();
+        })
+      }
+      className={`panel group/open relative ${reveal ? "home-card" : ""} flex min-w-0 flex-col gap-3 rounded-[14px] border border-line bg-surface p-5 ${on ? "panel-lift" : ""} ${
+        onOpen ? "cursor-pointer" : ""
+      } ${className}`}
     >
       <div className="flex items-center gap-2">
-        <h2 className="flex-1 text-[15px] font-semibold">{title}</h2>
+        {icon && (
+          <motion.span variants={ICON} className="card-icon flex size-7 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-accent">
+            {icon}
+          </motion.span>
+        )}
+        <h2 className="card-title flex min-w-0 flex-1 items-baseline gap-2 text-[15px] font-semibold">
+          {code && <span className="hud-only font-mono text-[10px] font-medium tracking-[0.14em] text-accent">{code}</span>}
+          <span className="truncate">{title}</span>
+        </h2>
         {aside}
+        {onOpen && (
+          <button
+            aria-label={`打开${title}`}
+            title={`打开${title}`}
+            onClick={onOpen}
+            className="-mr-1.5 flex size-7 items-center justify-center rounded-full text-muted opacity-0 group-hover/open:opacity-100 hover:bg-field hover:text-accent focus-visible:opacity-100"
+          >
+            <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 17L17 7M9 7h8v8" />
+            </svg>
+          </button>
+        )}
       </div>
       {children}
     </motion.section>

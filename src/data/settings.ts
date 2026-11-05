@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDb } from "./db";
 
-export type SettingKey = "deepseek_api_key" | "deepseek_model" | "prefs";
+export type SettingKey = "deepseek_api_key" | "deepseek_model" | "prefs" | "daily_quote";
 
 export async function getSetting(key: SettingKey): Promise<string | null> {
   const db = await getDb();

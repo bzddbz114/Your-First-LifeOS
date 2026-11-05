@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSetting, setSetting } from "./settings";
+import { useSession } from "./session";
 
 export type AccentId = "blue" | "green" | "purple" | "rose" | "teal" | "graphite";
 export type Appearance = "system" | "light" | "dark";
 export type MotionPref = "full" | "reduced";
 export type StyleId = "classic" | "glass" | "soft" | "mono";
+export type HomeTheme = "editorial" | "hud";
 export type HomeModule = "schedule" | "projects" | "habits" | "spending" | "body" | "journal";
 
 export interface Prefs {
@@ -16,6 +18,8 @@ export interface Prefs {
   motion: MotionPref;
   /** Visual style of panels and chrome. */
   style: StyleId;
+  /** Look of the Today page: warm editorial type, or an industrial HUD. */
+  homeTheme: HomeTheme;
   /** Today-page cards magnify under the pointer. */
   hoverZoom: boolean;
   /** Today-page cards the user switched off. */
@@ -28,6 +32,7 @@ export const DEFAULT_PREFS: Prefs = {
   appearance: "system",
   motion: "full",
   style: "classic",
+  homeTheme: "editorial",
   hoverZoom: true,
   homeHidden: [],
 };
@@ -58,7 +63,8 @@ export const HOME_MODULES: { id: HomeModule; label: string }[] = [
   { id: "journal", label: "日记" },
 ];
 
-const CACHE_KEY = "lifeos.prefs";
+/** Per-account localStorage mirror of the prefs, so the theme applies before the database loads. */
+const cacheKey = (accountId: number | null) => `lifeos.prefs.${accountId ?? 0}`;
 
 function parse(raw: string | null): Prefs {
   if (!raw) return DEFAULT_PREFS;
@@ -69,10 +75,10 @@ function parse(raw: string | null): Prefs {
   }
 }
 
-/** Last-known prefs from localStorage, so the theme applies before the database loads. */
-function cached(): Prefs {
+/** Last-known prefs of `accountId` (default: the signed-in one) from localStorage. */
+export function cachedPrefs(accountId = useSession.getState().accountId): Prefs {
   try {
-    return parse(localStorage.getItem(CACHE_KEY));
+    return parse(localStorage.getItem(cacheKey(accountId)));
   } catch {
     return DEFAULT_PREFS;
   }
@@ -82,7 +88,7 @@ export function usePrefs(): Prefs {
   const { data } = useQuery({
     queryKey: ["settings", "prefs"],
     queryFn: async () => parse(await getSetting("prefs")),
-    placeholderData: cached,
+    placeholderData: () => cachedPrefs(),
   });
   return data ?? DEFAULT_PREFS;
 }
@@ -95,7 +101,7 @@ export function useUpdatePrefs() {
       const raw = JSON.stringify(next);
       await setSetting("prefs", raw);
       try {
-        localStorage.setItem(CACHE_KEY, raw);
+        localStorage.setItem(cacheKey(useSession.getState().accountId), raw);
       } catch {
         // Cache only; the database copy is authoritative.
       }
@@ -103,7 +109,7 @@ export function useUpdatePrefs() {
     },
     // Optimistic, so color and theme pickers respond instantly.
     onMutate: (patch) => {
-      const prev = qc.getQueryData<Prefs>(["settings", "prefs"]) ?? cached();
+      const prev = qc.getQueryData<Prefs>(["settings", "prefs"]) ?? cachedPrefs();
       qc.setQueryData(["settings", "prefs"], { ...prev, ...patch });
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["settings", "prefs"] }),
@@ -130,8 +136,9 @@ export function useApplyPrefs(prefs: Prefs) {
     root.dataset.theme = dark ? "dark" : "light";
     root.dataset.motion = prefs.motion;
     root.dataset.style = prefs.style;
+    root.dataset.home = prefs.homeTheme;
     const [accent, ink] = (ACCENTS[prefs.accent] ?? ACCENTS.blue)[dark ? "dark" : "light"];
     root.style.setProperty("--color-accent", accent);
     root.style.setProperty("--color-accent-ink", ink);
-  }, [dark, prefs.accent, prefs.motion, prefs.style]);
+  }, [dark, prefs.accent, prefs.motion, prefs.style, prefs.homeTheme]);
 }

@@ -1,12 +1,12 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { setSetting, useSetting } from "../data/settings";
 import { DEFAULT_DEEPSEEK_MODEL } from "../data/ai";
 import { useInvalidating } from "../data/useInvalidating";
 import { Segmented, fieldClass, ghostButtonClass, primaryButtonClass } from "./Card";
-import { ACCENTS, HOME_MODULES, STYLES, usePrefs, useUpdatePrefs, type AccentId, type Appearance, type MotionPref, type StyleId } from "../data/prefs";
+import { ACCENTS, HOME_MODULES, STYLES, usePrefs, useUpdatePrefs, type AccentId, type Appearance, type HomeTheme, type MotionPref, type StyleId } from "../data/prefs";
 import { springs } from "./motion";
+import { Modal } from "./Modal";
 
 function AiForm({ onClose }: { onClose: () => void }) {
   const { data: savedKey } = useSetting("deepseek_api_key");
@@ -29,7 +29,7 @@ function AiForm({ onClose }: { onClose: () => void }) {
         save.mutate(undefined, { onSuccess: onClose });
       }}
     >
-      <p className="text-[13px] text-muted">DeepSeek 用于把项目拆解成步骤。Key 只保存在本机数据库里,拆解时只发送项目标题、说明、日期和已有步骤。</p>
+      <p className="text-[13px] text-muted">DeepSeek 用于拆解项目和写「每日一句」。Key 只保存在本机数据库里。拆解时只发送项目标题、说明、日期和已有步骤;写每日一句时只发送星期、时间、最多 3 件今日待办和进行中项目的标题。</p>
       <label className="flex flex-col gap-1.5 text-[13px] text-ink-2">
         DeepSeek API Key
         <div className="flex gap-2">
@@ -202,6 +202,17 @@ function PersonalForm({ onClose }: { onClose: () => void }) {
           ]}
         />
       </Field>
+      <Field label="主页主题">
+        <Segmented<HomeTheme>
+          label="主页主题"
+          value={prefs.homeTheme}
+          onChange={(v) => update.mutate({ homeTheme: v })}
+          options={[
+            { value: "editorial", label: "编辑 · 温暖衬线" },
+            { value: "hud", label: "工业 · HUD" },
+          ]}
+        />
+      </Field>
       <Field label="今天页悬停放大">
         <Segmented<"on" | "off">
           label="今天页悬停放大"
@@ -276,43 +287,10 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Modal sheet that springs up from slightly below, over a dimmed backdrop. */
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  // Portaled to <body>: a backdrop-filter on an ancestor (the glass sidebar) would otherwise
-  // become the containing block for this fixed overlay and squeeze it into the sidebar.
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-6 backdrop-blur-[2px]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          onClick={onClose}
-        >
-          <motion.div
-            role="dialog"
-            aria-modal="true"
-            aria-label="设置"
-            className="panel panel-sheet max-h-full w-full max-w-[480px] overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-6 shadow-2xl"
-            initial={{ opacity: 0, y: 24, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1, transition: springs.gentle }}
-            exit={{ opacity: 0, y: 12, scale: 0.97, transition: { duration: 0.15 } }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <SettingsForm onClose={onClose} />
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body,
+  return (
+    <Modal open={open} onClose={onClose} label="设置">
+      <SettingsForm onClose={onClose} />
+    </Modal>
   );
 }

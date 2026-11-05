@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { createContext, useEffect, useRef, type RefObject } from "react";
 import type { Transition, Variants } from "motion/react";
 
 /**
@@ -48,3 +48,6 @@ export function useIsNew(ids: readonly number[]) {
 
 /** Initial state for a list row: rise in when new, otherwise start where it is. */
 export const enterIf = (isNew: boolean) => (isNew ? { opacity: 0, y: -6, scale: 0.98 } : false);
+
+/** The app's main scrolling element, for scroll-linked effects (parallax, progress). */
+export const ScrollRootContext = createContext<RefObject<HTMLElement | null>>({ current: null });

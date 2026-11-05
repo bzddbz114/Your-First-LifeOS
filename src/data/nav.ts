@@ -8,6 +8,7 @@ interface NavState {
   tasksView: TasksView;
   navigate: (page: PageId, tasksView?: TasksView) => void;
   setTasksView: (view: TasksView) => void;
+  calendarView: "day" | "week";
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
 }
@@ -17,6 +18,7 @@ export const useNav = create<NavState>((set) => ({
   tasksView: "list",
   navigate: (page, tasksView) => set((s) => ({ page, tasksView: tasksView ?? s.tasksView })),
   setTasksView: (tasksView) => set({ tasksView }),
+  calendarView: "week",
   settingsOpen: false,
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
 }));

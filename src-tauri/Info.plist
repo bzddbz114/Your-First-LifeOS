@@ -3,8 +3,8 @@
 <plist version="1.0">
 <dict>
   <key>NSCalendarsFullAccessUsageDescription</key>
-  <string>LifeOS 读取你的日历事件,显示在「今天」和任务页的周视图中。数据只在本机使用。</string>
+  <string>LifeOS 读取并编辑你的日历事件:在「今天」和「日程」页显示,并把你在 LifeOS 里新建或修改的日程写回系统日历。数据只在本机使用。</string>
   <key>NSCalendarsUsageDescription</key>
-  <string>LifeOS 读取你的日历事件,显示在「今天」和任务页的周视图中。数据只在本机使用。</string>
+  <string>LifeOS 读取并编辑你的日历事件:在「今天」和「日程」页显示,并把你在 LifeOS 里新建或修改的日程写回系统日历。数据只在本机使用。</string>
 </dict>
 </plist>
